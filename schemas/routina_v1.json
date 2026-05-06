@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rutina de Routina v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "objetivo",
+    "dias_por_semana",
+    "duracion_sesion",
+    "formato",
+    "ejercicios",
+    "notas_generales",
+    "advertencia"
+  ],
+  "properties": {
+    "objetivo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dias_por_semana": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 7
+    },
+    "duracion_sesion": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Duración por sesión en minutos"
+    },
+    "formato": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ejercicios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["nombre", "series", "repeticiones", "descanso_seg", "notas"],
+        "properties": {
+          "nombre": { "type": "string", "minLength": 1 },
+          "series": { "type": "integer", "minimum": 1 },
+          "repeticiones": { "type": "string", "minLength": 1 },
+          "descanso_seg": { "type": "integer", "minimum": 0 },
+          "notas": { "type": "string" }
+        }
+      }
+    },
+    "notas_generales": { "type": "string" },
+    "advertencia": { "type": "string" }
+  }
+}

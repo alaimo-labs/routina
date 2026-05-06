@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Routina · Coach de fitness asistido por IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+    <div class="app" id="app">
+        <!-- ========================== Sidebar ========================== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-top">
+                <div class="brand">
+                    <div class="brand-logo"><span data-icon="dumbbell" data-size="22"></span></div>
+                    <div class="brand-meta">
+                        <div class="brand-name">Routina</div>
+                        <div class="brand-tag">Coach de fitness IA</div>
+                    </div>
+                </div>
+                <button class="icon-btn" id="collapse-sidebar" aria-label="Colapsar barra lateral" type="button">
+                    <span data-icon="panel-left"></span>
+                </button>
+            </div>
+
+            <nav class="mode-nav" id="mode-nav">
+                <a href="/" data-link class="mode-item" data-route="/">
+                    <span data-icon="home"></span>
+                    <span class="mode-label">Rutinas</span>
+                </a>
+                <a href="/chat" data-link class="mode-item" data-route="/chat">
+                    <span data-icon="message-square"></span>
+                    <span class="mode-label">Chat</span>
+                </a>
+                <a href="/agent" data-link class="mode-item" data-route="/agent">
+                    <span data-icon="bot"></span>
+                    <span class="mode-label">Agente</span>
+                    <span class="badge-soon">Pronto</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-context" id="sidebar-chat-section" hidden>
+                <button class="btn-new-chat" id="new-chat-btn" type="button">
+                    <span data-icon="plus"></span>
+                    <span>Nueva conversación</span>
+                </button>
+                <div class="sidebar-section-label">Conversaciones</div>
+                <div class="chat-list" id="chat-list"></div>
+            </div>
+
+            <div class="sidebar-spacer"></div>
+
+            <div class="sidebar-footer">
+                <a href="/historial" data-link class="nav-item" data-route="/historial">
+                    <span data-icon="history"></span>
+                    <span>Historial</span>
+                </a>
+                <button class="settings-btn" id="open-settings" type="button">
+                    <span data-icon="settings"></span>
+                    <span>Configuración</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Floating button to expand sidebar when collapsed -->
+        <button class="sidebar-show-btn" id="show-sidebar" aria-label="Mostrar barra lateral" type="button">
+            <span data-icon="panel-left"></span>
+        </button>
+
+        <!-- ========================== Main ========================== -->
+        <main class="main">
+            <!-- ----- /  → Home: rutinas guardadas ----- -->
+            <section class="view view-home" id="view-home">
+                <header class="view-header view-header--home">
+                    <div>
+                        <h2>Rutinas</h2>
+                        <p class="view-sub">Tu colección de rutinas guardadas. Generá una nueva con un click.</p>
+                    </div>
+                    <button class="btn-cta-large" id="btn-new-routine" type="button">
+                        <span data-icon="plus"></span>
+                        <span>Nueva rutina</span>
+                    </button>
+                </header>
+                <div class="filters">
+                    <input type="text" id="filter-objetivo" class="text-input" placeholder="Filtrar por objetivo…" />
+                    <select id="filter-formato" class="select-input"></select>
+                </div>
+                <div id="routines-grid" class="grid"></div>
+            </section>
+
+            <!-- ----- /chat → multi-turno ----- -->
+            <section class="view view-chat" id="view-chat">
+                <div class="chat-scroll" id="chat-scroll">
+                    <div class="chat-messages" id="chat-messages"></div>
+                </div>
+                <div class="composer">
+                    <div class="composer-inner">
+                        <textarea
+                            id="chat-input"
+                            class="composer-input"
+                            placeholder="Conversa con Routina. Pedí, refiná, ajustá la rutina turno a turno."
+                            rows="1"
+                        ></textarea>
+                        <button id="send-btn" class="send-btn" type="button" aria-label="Enviar">
+                            <span data-icon="send" data-size="18"></span>
+                        </button>
+                    </div>
+                    <div class="composer-hint">Multi-turno: cada mensaje incluye los anteriores como contexto · Enter envía · Shift+Enter newline</div>
+                </div>
+            </section>
+
+            <!-- ----- /agent → placeholder ----- -->
+            <section class="view view-agent" id="view-agent">
+                <div class="agent-placeholder">
+                    <div class="agent-ico"><span data-icon="bot" data-size="40"></span></div>
+                    <h2>Modo Agente</h2>
+                    <p>Multi-turno + tool calls + RAG.</p>
+                    <p class="agent-soon">Llega más adelante en el programa de evals.</p>
+                    <div class="agent-features">
+                        <div class="agent-feature">
+                            <span data-icon="sparkles" data-size="18"></span>
+                            <span>Function calling</span>
+                        </div>
+                        <div class="agent-feature">
+                            <span data-icon="search" data-size="18"></span>
+                            <span>Retrieval (RAG)</span>
+                        </div>
+                        <div class="agent-feature">
+                            <span data-icon="repeat" data-size="18"></span>
+                            <span>Loop multi-step</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ----- /historial → traza de evals ----- -->
+            <section class="view view-historial" id="view-historial">
+                <header class="view-header">
+                    <h2>Historial de corridas</h2>
+                    <p class="view-sub">Toda la traza: éxitos y fallos, one-shot y chat.</p>
+                </header>
+                <div class="filters">
+                    <div id="status-pills" class="pills">
+                        <button class="pill-btn active" data-status="" type="button">Todos</button>
+                        <button class="pill-btn" data-status="ok" type="button">OK</button>
+                        <button class="pill-btn" data-status="parse_error" type="button">JSON</button>
+                        <button class="pill-btn" data-status="schema_error" type="button">Schema</button>
+                        <button class="pill-btn" data-status="api_error" type="button">API</button>
+                    </div>
+                </div>
+                <div id="runs-list" class="list"></div>
+            </section>
+        </main>
+
+        <!-- ========================== Drawer (Configuración) ========================== -->
+        <div class="drawer" id="settings-drawer" hidden>
+            <div class="drawer-overlay" data-close-drawer></div>
+            <div class="drawer-panel">
+                <header class="drawer-header">
+                    <h2>Configuración</h2>
+                    <button class="icon-btn" data-close-drawer type="button" aria-label="Cerrar">
+                        <span data-icon="x"></span>
+                    </button>
+                </header>
+                <div class="drawer-body">
+                    <div id="api-key-status" class="api-key-status"></div>
+
+                    <div class="field">
+                        <label class="field-label" for="model-select">Modelo</label>
+                        <select id="model-select" class="select-input"></select>
+                    </div>
+
+                    <div class="field">
+                        <span class="field-label">Modo de prompt</span>
+                        <div class="radio-row">
+                            <label class="radio-opt">
+                                <input type="radio" name="prompt-mode" value="local" checked />
+                                <span>System prompt local</span>
+                            </label>
+                            <label class="radio-opt">
+                                <input type="radio" name="prompt-mode" value="openai_id" />
+                                <span>Prompt guardado en OpenAI</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="prompt-local-config">
+                        <div class="field">
+                            <div class="field-label-row">
+                                <label class="field-label" for="system-prompt-input">System prompt</label>
+                                <button class="text-btn" id="restore-prompt" type="button">Restaurar default</button>
+                            </div>
+                            <textarea id="system-prompt-input" class="textarea-input" rows="14"></textarea>
+                        </div>
+                    </div>
+
+                    <div id="prompt-openai-config" hidden>
+                        <div class="field">
+                            <label class="field-label" for="prompt-id-input">Prompt ID</label>
+                            <input type="text" id="prompt-id-input" class="text-input" placeholder="pmpt_…" />
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="prompt-version-input">Versión (opcional)</label>
+                            <input type="text" id="prompt-version-input" class="text-input" placeholder="ej. 3" />
+                        </div>
+                    </div>
+
+                    <div class="schema-info">
+                        Schema activo: <code id="schema-path">…</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================== Modal genérico (rutina/run detail) ========================== -->
+        <div class="modal" id="modal" hidden>
+            <div class="modal-overlay" data-close-modal></div>
+            <div class="modal-panel">
+                <header class="modal-header">
+                    <h3 id="modal-title">…</h3>
+                    <button class="icon-btn" data-close-modal type="button" aria-label="Cerrar">
+                        <span data-icon="x"></span>
+                    </button>
+                </header>
+                <div class="modal-body" id="modal-body"></div>
+            </div>
+        </div>
+
+        <!-- ========================== Modal one-shot ("+ Nueva rutina") ========================== -->
+        <div class="modal" id="oneshot-modal" hidden>
+            <div class="modal-overlay" data-close-oneshot></div>
+            <div class="modal-panel modal-panel--oneshot">
+                <header class="modal-header">
+                    <h3>Nueva rutina</h3>
+                    <button class="icon-btn" data-close-oneshot type="button" aria-label="Cerrar">
+                        <span data-icon="x"></span>
+                    </button>
+                </header>
+                <div class="modal-body" id="oneshot-body">
+                    <div id="oneshot-input-block">
+                        <p class="oneshot-help">Describí el caso del usuario en lenguaje natural. Una sola interacción, una sola rutina.</p>
+                        <textarea id="oneshot-input" class="textarea-input" rows="4" placeholder="Ej: Quiero perder peso, tengo 30 minutos por día, 4 veces por semana, sin equipamiento."></textarea>
+                        <div class="oneshot-actions">
+                            <button class="btn btn-primary" id="oneshot-generate-btn" type="button">
+                                <span data-icon="sparkles" data-size="14"></span>
+                                <span>Generar rutina</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="oneshot-result-block" hidden></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================== Toast ========================== -->
+        <div id="toast" class="toast" hidden></div>
+    </div>
+
+    <script src="/static/app.js" defer></script>
+</body>
+</html>
