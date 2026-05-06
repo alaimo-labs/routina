@@ -33,6 +33,8 @@ const ICONS = {
     search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
     moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+    info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    'chevrons-up-down': '<path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/>',
 };
 
 function icon(name, size = 16) {
@@ -550,6 +552,8 @@ async function renderHome() {
         return;
     }
 
+    document.getElementById('home-filters').hidden = data.formatos.length === 0;
+
     const sel = document.getElementById('filter-formato');
     const current = state.routinesFilter.formato || '';
     sel.innerHTML = '<option value="">Todos los formatos</option>' +
@@ -774,6 +778,15 @@ function openOneshotModal() {
 
 function closeOneshotModal() {
     document.getElementById('oneshot-modal').hidden = true;
+}
+
+// -------------------- Modal "Acerca de" --------------------
+function openAboutModal() {
+    document.getElementById('about-modal').hidden = false;
+}
+
+function closeAboutModal() {
+    document.getElementById('about-modal').hidden = true;
 }
 
 async function runOneshotGenerate() {
@@ -1088,10 +1101,10 @@ function applyTheme() {
     const iconEl = document.getElementById('theme-icon');
     const labelEl = document.getElementById('theme-label');
     if (iconEl) {
-        iconEl.dataset.icon = state.theme === 'dark' ? 'sun' : 'moon';
+        iconEl.dataset.icon = state.theme === 'dark' ? 'moon' : 'sun';
         iconEl.innerHTML = icon(iconEl.dataset.icon, 16);
     }
-    if (labelEl) labelEl.textContent = state.theme === 'dark' ? 'Claro' : 'Oscuro';
+    if (labelEl) labelEl.textContent = state.theme === 'dark' ? 'Oscuro' : 'Claro';
     localStorage.setItem(THEME_KEY, state.theme);
 }
 function toggleTheme() {
@@ -1134,11 +1147,18 @@ function bindEvents() {
         } else if (ev.target.closest('#reset-all-btn')) {
             resetAll();
         } else if (ev.target.id === 'restore-prompt') {
-            api.getSystemPrompt().then(text => {
+            (async () => {
+                const ok = await confirmDialog({
+                    title: 'Restaurar default',
+                    message: 'Esto reemplaza el System Prompt actual por la versión por defecto. La acción no se puede deshacer.',
+                    okLabel: 'Restaurar',
+                });
+                if (!ok) return;
+                const text = await api.getSystemPrompt();
                 state.settings.systemPrompt = text;
                 document.getElementById('system-prompt-input').value = text;
                 saveSettings();
-            });
+            })();
         }
     });
     document.querySelectorAll('input[name="prompt-mode"]').forEach(r => {
@@ -1229,6 +1249,14 @@ function bindEvents() {
         }
     });
 
+    // About modal
+    document.getElementById('open-about').addEventListener('click', openAboutModal);
+    document.getElementById('about-modal').addEventListener('click', (ev) => {
+        if (ev.target.matches('[data-close-about]') || ev.target.closest('[data-close-about]')) {
+            closeAboutModal();
+        }
+    });
+
     // Historial
     document.getElementById('status-pills').addEventListener('click', (ev) => {
         const btn = ev.target.closest('.pill-btn');
@@ -1263,7 +1291,8 @@ function bindEvents() {
     // Escape
     document.addEventListener('keydown', (ev) => {
         if (ev.key === 'Escape') {
-            if (!document.getElementById('oneshot-modal').hidden) closeOneshotModal();
+            if (!document.getElementById('about-modal').hidden) closeAboutModal();
+            else if (!document.getElementById('oneshot-modal').hidden) closeOneshotModal();
             else if (!document.getElementById('modal').hidden) closeModal();
             else if (state.drawerOpen) { commitSettingsFromDOM(); closeDrawer(); }
         }

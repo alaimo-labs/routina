@@ -62,8 +62,11 @@
                     <span data-icon="settings"></span>
                     <span>Configuración</span>
                 </button>
+                <button class="settings-btn" id="open-about" type="button">
+                    <span data-icon="info"></span>
+                    <span>Acerca de</span>
+                </button>
                 <div class="user-meta">
-                    <div class="user-meta-line">v0.4.1 · es-AR</div>
                     <div class="user-meta-sub">desarrollado por<br><a href="https://alaimolabs.com" target="_blank" rel="noopener" class="user-meta-link">Alaimo Labs</a> para <a href="https://alaimolabs.com/eva" target="_blank" rel="noopener" class="user-meta-link">AI Evals</a></div>
                 </div>
             </div>
@@ -95,7 +98,7 @@
                         </button>
                     </div>
                 </header>
-                <div class="filters">
+                <div class="filters" id="home-filters" hidden>
                     <input type="text" id="filter-objetivo" class="text-input" placeholder="Filtrar por objetivo…" />
                     <select id="filter-formato" class="select-input"></select>
                 </div>
@@ -200,10 +203,11 @@
                             <select id="model-select" class="select-input"></select>
                         </div>
                         <div class="field">
-                            <span class="field-label">Tema</span>
+                            <span class="field-label">Tema actual</span>
                             <button class="theme-toggle" id="toggle-theme" type="button" aria-label="Cambiar tema">
                                 <span data-icon="moon" id="theme-icon"></span>
                                 <span id="theme-label">Oscuro</span>
+                                <span data-icon="chevrons-up-down" class="theme-toggle-chevron"></span>
                             </button>
                         </div>
                     </div>
@@ -308,6 +312,39 @@
                     <div class="confirm-actions">
                         <button class="btn btn-outline" id="confirm-cancel" type="button">Cancelar</button>
                         <button class="btn btn-primary" id="confirm-ok" type="button">Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================== Modal "Acerca de" ========================== -->
+        <div class="modal" id="about-modal" hidden>
+            <div class="modal-overlay" data-close-about></div>
+            <div class="modal-panel modal-panel--about">
+                <header class="modal-header">
+                    <h3>Acerca de Routina</h3>
+                    <button class="icon-btn" data-close-about type="button" aria-label="Cerrar">
+                        <span data-icon="x"></span>
+                    </button>
+                </header>
+                <div class="modal-body">
+                    <div class="about-content">
+                        <p>
+                            <strong>Routina</strong> es una app de coaching de fitness asistida por IA,
+                            desarrollada por <a href="https://alaimolabs.com" target="_blank" rel="noopener" class="about-link">Alaimo Labs</a>
+                            con fines prácticos: ofrecer a los alumnos del programa
+                            <a href="https://alaimolabs.com/eva" target="_blank" rel="noopener" class="about-link">AI Evals</a>
+                            un entorno simulado donde practicar el diseño y la evaluación de aplicaciones con LLMs.
+                        </p>
+                        <p>
+                            Las tres rutas de la app — <em>Rutinas</em>, <em>Chat</em> y <em>Agente</em> — son el lienzo del curso:
+                            cada una representa un escope distinto de evaluación (calidad de salida, coherencia conversacional, agente con tools)
+                            que se recorre a lo largo del programa.
+                        </p>
+                        <div class="about-meta">
+                            <div class="about-meta-line">Versión 0.4.1 · es-AR</div>
+                            <div class="about-meta-line">MIT License — Copyright (c) 2026 MTN LABS LLC d/b/a Alaimo Labs</div>
+                        </div>
                     </div>
                 </div>
             </div>
