@@ -1,6 +1,6 @@
 # Routina
 
-App de coaching de fitness asistida por IA. Es el caso de estudio del programa de formación en AI evals de [alaimolabs.com/es/eva](https://alaimolabs.com/es/eva): a lo largo del curso vamos a evaluar este producto en sus distintas dimensiones.
+App de coaching de fitness asistida por IA. Es el caso de estudio del programa de formación en AI evals de Alaimo Labs: [AI Evals para Product managers y Testers](https://alaimolabs.com/es/eva): a lo largo del curso evaluamos este producto en sus distintas dimensiones.
 
 Esta versión es **local**: corre en tu computadora, usa tu propia API key de OpenAI y guarda la información en una base de datos local (SQLite).
 
@@ -106,7 +106,7 @@ Después abre tu navegador en `http://localhost:8000`. Listo.
 La app expone tres "modos" como rutas distintas, alineadas con la progresión del programa de evals (cada una representa un escope de evaluación distinto):
 
 - **`/` Rutinas (one-shot)** — biblioteca de rutinas guardadas con un botón **"+ Nueva rutina"** que abre un modal. Escribes el caso, generás la rutina y decidís si guardarla o descartarla. Cada generación es independiente, sin contexto previo. Es el modo más simple para evaluar calidad de salida pura.
-- **`/chat` Chat (multi-turno)** — conversación al estilo ChatGPT/Claude. Cada turno se acumula en el contexto del LLM, así podés refinar (*"hacela más corta"*, *"cambiá el formato a HIIT"*). El historial de chats persiste en la barra lateral. Pensado para evaluar coherencia conversacional.
+- **`/chat` Chat (multi-turno)** — conversación al estilo ChatGPT/Claude. Cada turno se acumula en el contexto del LLM, así podés refinar (_"hacela más corta"_, _"cambiá el formato a HIIT"_). El historial de chats persiste en la barra lateral. Pensado para evaluar coherencia conversacional.
 - **`/agent` Agente** — placeholder por ahora. Vendrá en encuentros futuros del curso con tool calling, RAG y loop multi-step.
 
 Adicionalmente hay **`/historial`**: la traza completa de evals — toda corrida (one-shot o chat, exitosa o fallida) queda registrada con su input, prompt, respuesta cruda, errores y mensajes de la traza.
@@ -120,17 +120,21 @@ Adicionalmente hay **`/historial`**: la traza completa de evals — toda corrida
 ## Si te quedas atascado
 
 **"git: command not found" o "git no se reconoce"**
+
 - macOS: ejecuta `xcode-select --install` y acepta.
 - Windows: descarga Git for Windows desde https://git-scm.com/download/win e instálalo.
 
 **"Falta la API key" aunque tengas `.env`**
+
 - Verifica que el archivo se llame exactamente `.env` (no `.env.txt`) y esté en la raíz del proyecto, junto a `pyproject.toml`.
 - En Windows, el Bloc de notas a veces agrega `.txt` automáticamente. Activa "Mostrar extensiones de archivo" en el Explorador y renómbralo si fue así.
 
 **"Address already in use" o el puerto 8000 está ocupado**
+
 - Cierra cualquier otra app que esté usando ese puerto. Si persiste, levanta el servidor en otro puerto: `uv run uvicorn server:app --port 8002`.
 
 **Errores de OpenAI: "Incorrect API key" o "Insufficient quota"**
+
 - Ve a https://platform.openai.com y verifica que la key sea válida y tu cuenta tenga crédito.
 
 ---
@@ -162,17 +166,17 @@ La base de datos vive en `data/routina.db`. Si quieres inspeccionarla a mano, pu
 
 El frontend es una SPA estática que habla con FastAPI vía estos endpoints (útil si querés correr scripts de eval contra el mismo backend):
 
-| Método | Path | Propósito |
-| --- | --- | --- |
-| `POST` | `/api/oneshot/generate` | Generación independiente, sin chat ni contexto previo |
-| `POST` | `/api/chat/generate` | Generación dentro de un chat: incluye los turnos previos como contexto |
-| `GET` | `/api/chats?mode=chat` | Lista de chats persistidos |
-| `GET` | `/api/chats/{id}` | Detalle de un chat con todos sus runs |
-| `DELETE` | `/api/chats/{id}` | Borra un chat (las rutinas guardadas se mantienen) |
-| `GET` | `/api/runs?status=...` | Toda la traza de runs |
-| `GET` | `/api/runs/{id}` | Detalle de un run con messages, errores y respuesta cruda |
-| `POST` | `/api/routines` | Body `{run_id}`. Guarda como rutina el output del run |
-| `GET` | `/api/routines` | Lista de rutinas guardadas (filtros: `objetivo`, `formato`) |
-| `GET` | `/api/config` | Modelos disponibles, default, si la API key está cargada |
-| `GET` | `/api/system-prompt` | El system prompt por defecto (texto plano) |
-| `GET` | `/api/schema` | El JSON Schema activo |
+| Método   | Path                    | Propósito                                                              |
+| -------- | ----------------------- | ---------------------------------------------------------------------- |
+| `POST`   | `/api/oneshot/generate` | Generación independiente, sin chat ni contexto previo                  |
+| `POST`   | `/api/chat/generate`    | Generación dentro de un chat: incluye los turnos previos como contexto |
+| `GET`    | `/api/chats?mode=chat`  | Lista de chats persistidos                                             |
+| `GET`    | `/api/chats/{id}`       | Detalle de un chat con todos sus runs                                  |
+| `DELETE` | `/api/chats/{id}`       | Borra un chat (las rutinas guardadas se mantienen)                     |
+| `GET`    | `/api/runs?status=...`  | Toda la traza de runs                                                  |
+| `GET`    | `/api/runs/{id}`        | Detalle de un run con messages, errores y respuesta cruda              |
+| `POST`   | `/api/routines`         | Body `{run_id}`. Guarda como rutina el output del run                  |
+| `GET`    | `/api/routines`         | Lista de rutinas guardadas (filtros: `objetivo`, `formato`)            |
+| `GET`    | `/api/config`           | Modelos disponibles, default, si la API key está cargada               |
+| `GET`    | `/api/system-prompt`    | El system prompt por defecto (texto plano)                             |
+| `GET`    | `/api/schema`           | El JSON Schema activo                                                  |

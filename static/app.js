@@ -1,6 +1,6 @@
 // =====================================================================================
 // Routina · frontend (vanilla JS, no frameworks)
-// Tres rutas: / (one-shot), /chat (multi-turno), /agent (placeholder), /historial.
+// Tres rutas: / (one-shot), /chat (multi-turno), /agent (placeholder), /history.
 // =====================================================================================
 'use strict';
 
@@ -31,6 +31,8 @@ const ICONS = {
     bot: '<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>',
     repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
     search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+    moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
 };
 
 function icon(name, size = 16) {
@@ -50,6 +52,7 @@ function replaceIcons(root = document) {
 
 // -------------------- Estado --------------------
 const SETTINGS_KEY = 'routina:settings';
+const THEME_KEY = 'routina:theme';
 
 const state = {
     route: window.location.pathname,
@@ -69,6 +72,7 @@ const state = {
     runsFilter: { status: '' },
     drawerOpen: false,
     sidebarCollapsed: localStorage.getItem('routina:sidebar-collapsed') === '1',
+    theme: localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light',
     oneshot: { lastRunId: null, isSaved: false },
 };
 
@@ -156,6 +160,14 @@ const api = {
         if (!r.ok) throw new Error('Rutina no encontrada');
         return r.json();
     },
+    async deleteRoutine(id) {
+        const r = await fetch(`/api/routines/${id}`, { method: 'DELETE' });
+        if (!r.ok) {
+            const data = await r.json().catch(() => ({}));
+            throw new Error(data.detail || 'No pude borrar la rutina');
+        }
+        return r.json();
+    },
     async listChats(mode = null) {
         const params = new URLSearchParams();
         if (mode) params.set('mode', mode);
@@ -172,6 +184,14 @@ const api = {
         if (!r.ok) {
             const data = await r.json().catch(() => ({}));
             throw new Error(data.detail || 'No pude borrar el chat');
+        }
+        return r.json();
+    },
+    async resetAll() {
+        const r = await fetch('/api/admin/reset', { method: 'POST' });
+        if (!r.ok) {
+            const data = await r.json().catch(() => ({}));
+            throw new Error(data.detail || 'No pude resetear');
         }
         return r.json();
     },
@@ -227,8 +247,46 @@ function showToast(text) {
     showToast._t = setTimeout(() => { t.hidden = true; }, 2900);
 }
 
+function confirmDialog({ title = 'Confirmar', message = '', okLabel = 'Confirmar', cancelLabel = 'Cancelar' } = {}) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirm-modal');
+        const titleEl = document.getElementById('confirm-title');
+        const msgEl = document.getElementById('confirm-message');
+        const okBtn = document.getElementById('confirm-ok');
+        const cancelBtn = document.getElementById('confirm-cancel');
+        const overlay = modal.querySelector('[data-confirm-cancel]');
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        okBtn.textContent = okLabel;
+        cancelBtn.textContent = cancelLabel;
+        modal.hidden = false;
+
+        const cleanup = (result) => {
+            modal.hidden = true;
+            okBtn.removeEventListener('click', onOk);
+            cancelBtn.removeEventListener('click', onCancel);
+            overlay.removeEventListener('click', onCancel);
+            document.removeEventListener('keydown', onKey, true);
+            resolve(result);
+        };
+        const onOk = () => cleanup(true);
+        const onCancel = () => cleanup(false);
+        const onKey = (ev) => {
+            if (ev.key === 'Escape') { ev.stopPropagation(); onCancel(); }
+            else if (ev.key === 'Enter') { ev.preventDefault(); onOk(); }
+        };
+
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        overlay.addEventListener('click', onCancel);
+        document.addEventListener('keydown', onKey, true);
+        setTimeout(() => okBtn.focus(), 50);
+    });
+}
+
 // -------------------- Router --------------------
-const ROUTES = ['/', '/chat', '/agent', '/historial'];
+const ROUTES = ['/', '/chat', '/agent', '/history'];
 
 const router = {
     init() {
@@ -264,31 +322,43 @@ function renderRoutineHTML(payload) {
     const advertencia = (payload.advertencia || '').trim();
     const notas = (payload.notas_generales || '').trim();
 
-    const ejercicios = (payload.ejercicios || []).map(ej => {
+    const ejercicios = (payload.ejercicios || []).map((ej, i) => {
         const nombre = escapeHtml(ej.nombre || 'Ejercicio');
         const series = ej.series ?? '?';
         const reps = escapeHtml(String(ej.repeticiones ?? '?'));
         const descanso = ej.descanso_seg ?? 0;
         const exNotas = (ej.notas || '').trim();
+        const num = String(i + 1).padStart(2, '0');
         return `
-            <div class="exercise-card">
-                <div class="exercise-name">${nombre}</div>
-                <div class="exercise-prescription">${series} × ${reps}</div>
-                <div class="exercise-rest">${icon('timer', 13)} ${descanso}s descanso</div>
-                ${exNotas ? `<div class="exercise-notes">${escapeHtml(exNotas)}</div>` : ''}
+            <div class="exercise-row">
+                <span class="ex-num">${num}</span>
+                <span class="ex-name">${nombre}</span>
+                <span class="ex-prescription">${series}×${reps}</span>
+                <span class="ex-rest">${descanso}s</span>
+                ${exNotas ? `<span class="ex-notes-cell">${escapeHtml(exNotas)}</span>` : '<span></span>'}
             </div>
         `;
     }).join('');
 
+    const notasHtml = notas
+        ? notas.split(/\n+/).map(l => l.trim()).filter(Boolean).map((line, i) => `
+            <div class="nota-line">
+                <span class="nota-num">${String(i + 1).padStart(2, '0')}</span>
+                <span>${escapeHtml(line)}</span>
+            </div>
+        `).join('')
+        : '';
+
     return `
+        <div class="routine-eyebrow">Objetivo</div>
         <div class="routine-objetivo">${objetivo}</div>
         <div class="routine-meta-row">
             <div class="routine-meta-item">
-                <div class="label">Días/semana</div>
-                <div class="value">${dias}</div>
+                <div class="label">Frecuencia</div>
+                <div class="value">${dias}<span class="unit">días/sem</span></div>
             </div>
             <div class="routine-meta-item">
-                <div class="label">Duración</div>
+                <div class="label">Por sesión</div>
                 <div class="value">${duracion}<span class="unit">min</span></div>
             </div>
             <div class="routine-meta-item">
@@ -298,15 +368,15 @@ function renderRoutineHTML(payload) {
         </div>
         ${advertencia ? `
             <div class="advertencia">
-                <span data-icon="alert-triangle" data-size="20"></span>
-                <span class="txt">${escapeHtml(advertencia)}</span>
+                <div class="advertencia-label">· Aviso</div>
+                <div class="txt">${escapeHtml(advertencia)}</div>
             </div>
         ` : ''}
         <div class="section-heading">Ejercicios</div>
-        <div class="exercises-grid">${ejercicios}</div>
+        <div class="exercises-list">${ejercicios}</div>
         ${notas ? `
             <div class="section-heading">Notas generales</div>
-            <div class="notas-generales">${escapeHtml(notas)}</div>
+            <div class="notas-generales">${notasHtml}</div>
         ` : ''}
     `;
 }
@@ -342,10 +412,28 @@ function renderChatMessages() {
     if (state.chatMessages.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'chat-empty';
+        const examples = [
+            'Soy intermedio, voy al gimnasio 4 veces por semana. Quiero ganar masa muscular en torso.',
+            'Quiero empezar a entrenar pero no sé por dónde. 25 min por día y solo una colchoneta.',
+            'Quiero correr una 10K en 3 meses. Hoy corro 4km. 3 sesiones + algo de fuerza.',
+        ];
         empty.innerHTML = `
-            <div class="ico-wrap">${icon('message-square', 32)}</div>
-            <h3>Conversa con Routina</h3>
-            <p>En este modo cada turno incluye los anteriores como contexto.<br>Pedí, refiná, ajustá la rutina iterando.</p>
+            <div class="view-eyebrow">
+                <span class="mono-label">02 · Chat</span>
+                <div class="view-eyebrow-rule"></div>
+                <span class="mono-label">Routina</span>
+            </div>
+            <h3>Cuéntame qué quieres entrenar.</h3>
+            <p>Cuanto más concreto seas — objetivo, días disponibles, equipamiento, lesiones — mejor va a ser el plan que armemos. Cada turno incluye los anteriores como contexto.</p>
+            <div class="examples">
+                <div class="examples-label">Prueba con</div>
+                ${examples.map((ex, i) => `
+                    <button class="example-chip" data-example="${escapeHtml(ex)}">
+                        <span class="example-chip-num">${String(i + 1).padStart(2, '0')}</span>
+                        <span>${escapeHtml(ex)}</span>
+                    </button>
+                `).join('')}
+            </div>
         `;
         messages.appendChild(empty);
         return;
@@ -364,7 +452,7 @@ function renderChatMessages() {
             node.innerHTML = `
                 <div class="assistant-card loading">
                     <div class="dots"><span></span><span></span><span></span></div>
-                    <span>Generando…</span>
+                    <span>Armando tu rutina…</span>
                 </div>
             `;
             messages.appendChild(node);
@@ -431,15 +519,15 @@ function renderAssistantMessage(run) {
         cardHtml = renderRoutineHTML(run.parsed);
         const savedAttr = run._saved ? 'disabled' : '';
         const savedLabel = run._saved
-            ? `${icon('check', 14)} Rutina guardada`
-            : `${icon('save', 14)} Guardar rutina`;
+            ? `<span>✓ Guardada</span>`
+            : `<span>Guardar →</span>`;
         actionsHtml = `
             <div class="assistant-card-actions">
                 <button class="btn btn-primary" data-save-run="${run.run_id}" ${savedAttr}>${savedLabel}</button>
                 <span class="meta-chips">
-                    <span>${icon('timer', 13)} ${run.latency_ms} ms</span>
-                    <span>${icon('arrow-up-down', 13)} ${run.input_tokens ?? '—'} / ${run.output_tokens ?? '—'} tokens</span>
-                    <span>${icon('cpu', 13)} ${escapeHtml(run.model)}</span>
+                    <span>${run.latency_ms} ms</span>
+                    <span>· ${run.input_tokens ?? '—'} / ${run.output_tokens ?? '—'} tokens</span>
+                    <span>· ${escapeHtml(run.model)}</span>
                 </span>
             </div>
         `;
@@ -471,32 +559,54 @@ async function renderHome() {
     if (data.routines.length === 0) {
         grid.innerHTML = `
             <div class="empty-state">
-                <div class="ico-wrap">${icon('bookmark', 26)}</div>
-                <h4>Todavía no hay rutinas guardadas</h4>
-                <p>Hacé click en <strong>+ Nueva rutina</strong> para generar la primera.</p>
+                <div class="ico-wrap">
+                    <span>· Vacío</span>
+                    <div class="ico-wrap-rule"></div>
+                </div>
+                <h4>Todavía no hay rutinas guardadas.</h4>
+                <p>Haz click en <strong>+ Nueva rutina</strong> para generar la primera. Cada rutina queda guardada acá con su run asociado en el historial.</p>
             </div>
         `;
-        replaceIcons(grid);
         return;
     }
 
-    grid.innerHTML = data.routines.map(r => `
-        <div class="routine-summary-card" data-open-routine="${r.id}">
-            <div class="title">${escapeHtml(r.objetivo || '(sin objetivo)')}</div>
-            <div>${accentPillHtml(r.formato || '—')}</div>
-            <div class="meta">
-                <span class="with-ico">${icon('calendar', 13)} ${r.dias_por_semana ?? '—'} días/sem</span>
-                <span class="dot">·</span>
-                <span class="with-ico">${icon('timer', 13)} ${r.duracion_sesion ?? '—'} min</span>
-                <span class="dot">·</span>
-                <span>${relativeTime(r.created_at)}</span>
+    grid.innerHTML = data.routines.map((r, i) => {
+        const num = String(i + 1).padStart(2, '0');
+        return `
+            <div class="routine-summary-card" data-open-routine="${r.id}">
+                <span class="index-num">${num}</span>
+                <div>
+                    <div class="title">${escapeHtml(r.objetivo || '(sin objetivo)')}</div>
+                    <div class="meta">${escapeHtml(r.formato || '—')} · ${relativeTime(r.created_at)}</div>
+                </div>
+                <span class="summary-stat">${r.dias_por_semana ?? '—'}× · ${r.duracion_sesion ?? '—'}'</span>
+                <span class="summary-tag">${escapeHtml(r.formato || '—').slice(0, 20)}</span>
+                <button class="routine-delete-btn" data-delete-routine="${r.id}" aria-label="Borrar rutina" type="button">
+                    ${icon('trash', 14)}
+                </button>
+                <span class="summary-arrow">›</span>
             </div>
-        </div>
-    `).join('');
-    replaceIcons(grid);
+        `;
+    }).join('');
 }
 
-// -------------------- Render: historial (/historial) --------------------
+async function deleteRoutine(routineId) {
+    const ok = await confirmDialog({
+        title: 'Borrar rutina',
+        message: 'La corrida en el historial se mantiene.',
+        okLabel: 'Borrar',
+    });
+    if (!ok) return;
+    try {
+        await api.deleteRoutine(routineId);
+        showToast('Rutina borrada');
+        renderHome();
+    } catch (e) {
+        showToast('No pude borrar: ' + e.message);
+    }
+}
+
+// -------------------- Render: historial (/history) --------------------
 async function renderHistorial() {
     const list = document.getElementById('runs-list');
     list.innerHTML = `<div class="empty-state"><p>Cargando…</p></div>`;
@@ -513,12 +623,14 @@ async function renderHistorial() {
     if (runs.length === 0) {
         list.innerHTML = `
             <div class="empty-state">
-                <div class="ico-wrap">${icon('history', 26)}</div>
-                <h4>No hay corridas con este filtro</h4>
+                <div class="ico-wrap">
+                    <span>· Sin resultados</span>
+                    <div class="ico-wrap-rule"></div>
+                </div>
+                <h4>No hay corridas con este filtro.</h4>
                 <p>Genera una rutina o cambia el filtro.</p>
             </div>
         `;
-        replaceIcons(list);
         return;
     }
 
@@ -530,20 +642,19 @@ async function renderHistorial() {
                 <div class="top">
                     ${statusPillHtml(r.status)}
                     ${neutralPillHtml(r.model)}
-                    ${neutralPillHtml(r.prompt_mode === 'local' ? 'prompt local' : 'prompt OpenAI')}
+                    ${neutralPillHtml(r.prompt_mode === 'local' ? 'prompt local' : 'prompt openai')}
                 </div>
                 <div class="preview">${escapeHtml(truncated || '(sin input)')}</div>
                 <div class="meta">
                     <span>${relativeTime(r.created_at)}</span>
                     <span class="dot">·</span>
-                    <span class="with-ico">${icon('timer', 13)} ${r.latency_ms ?? '—'} ms</span>
+                    <span>${r.latency_ms ?? '—'} ms</span>
                     <span class="dot">·</span>
-                    <span class="with-ico">${icon('arrow-up-down', 13)} ${r.input_tokens ?? '—'} / ${r.output_tokens ?? '—'}</span>
+                    <span>${r.input_tokens ?? '—'} / ${r.output_tokens ?? '—'} tok</span>
                 </div>
             </div>
         `;
     }).join('');
-    replaceIcons(list);
 }
 
 // -------------------- Render: route dispatcher --------------------
@@ -561,7 +672,7 @@ function renderRoute() {
         '/': 'view-home',
         '/chat': 'view-chat',
         '/agent': 'view-agent',
-        '/historial': 'view-historial',
+        '/history': 'view-historial',
     };
     const targetId = viewMap[state.route] || 'view-home';
     document.querySelectorAll('.view').forEach(v => {
@@ -574,7 +685,7 @@ function renderRoute() {
     } else if (state.route === '/chat') {
         renderChatMessages();
         renderChatList();
-    } else if (state.route === '/historial') {
+    } else if (state.route === '/history') {
         renderHistorial();
     }
 }
@@ -830,7 +941,12 @@ async function loadChat(chatId) {
 }
 
 async function deleteChat(chatId) {
-    if (!confirm('¿Borrar esta conversación? Las rutinas guardadas se mantienen.')) return;
+    const ok = await confirmDialog({
+        title: 'Borrar conversación',
+        message: 'Las rutinas guardadas se mantienen.',
+        okLabel: 'Borrar',
+    });
+    if (!ok) return;
     try {
         await api.deleteChat(chatId);
         if (state.currentChatId === chatId) {
@@ -889,6 +1005,26 @@ async function chatSend() {
     }
 }
 
+async function resetAll() {
+    const ok = await confirmDialog({
+        title: 'Borrar todo',
+        message: 'Vas a borrar todas las trazas, conversaciones y rutinas guardadas. La acción no se puede deshacer.',
+        okLabel: 'Borrar todo',
+    });
+    if (!ok) return;
+    try {
+        await api.resetAll();
+        state.chats = [];
+        state.currentChatId = null;
+        state.chatMessages = [];
+        showToast('Todo borrado');
+        renderChatList();
+        renderRoute();
+    } catch (e) {
+        showToast('No pude borrar: ' + e.message);
+    }
+}
+
 async function saveRunFromChat(runId) {
     try {
         await api.saveRoutine(runId);
@@ -912,8 +1048,8 @@ function openDrawer() {
     const apiStatus = document.getElementById('api-key-status');
     apiStatus.className = 'api-key-status ' + (state.config.has_api_key ? 'ok' : 'missing');
     apiStatus.innerHTML = state.config.has_api_key
-        ? `${icon('check', 14)} <span>API key configurada</span>`
-        : `${icon('alert-triangle', 14)} <span>Falta OPENAI_API_KEY en .env</span>`;
+        ? `${icon('check', 14)} <span>Configurada</span>`
+        : `${icon('alert-triangle', 14)} <span>Falta en .env</span>`;
 
     const modelSel = document.getElementById('model-select');
     modelSel.innerHTML = state.config.available_models
@@ -946,6 +1082,23 @@ function applySidebarCollapse() {
 }
 function toggleSidebar() { state.sidebarCollapsed = !state.sidebarCollapsed; applySidebarCollapse(); }
 
+// -------------------- Theme --------------------
+function applyTheme() {
+    document.documentElement.setAttribute('data-theme', state.theme);
+    const iconEl = document.getElementById('theme-icon');
+    const labelEl = document.getElementById('theme-label');
+    if (iconEl) {
+        iconEl.dataset.icon = state.theme === 'dark' ? 'sun' : 'moon';
+        iconEl.innerHTML = icon(iconEl.dataset.icon, 16);
+    }
+    if (labelEl) labelEl.textContent = state.theme === 'dark' ? 'Claro' : 'Oscuro';
+    localStorage.setItem(THEME_KEY, state.theme);
+}
+function toggleTheme() {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    applyTheme();
+}
+
 // -------------------- Textarea autoresize --------------------
 function autoresizeTextarea(ta) {
     ta.style.height = 'auto';
@@ -976,6 +1129,10 @@ function bindEvents() {
         if (ev.target.matches('[data-close-drawer]') || ev.target.closest('[data-close-drawer]')) {
             commitSettingsFromDOM();
             closeDrawer();
+        } else if (ev.target.closest('#toggle-theme')) {
+            toggleTheme();
+        } else if (ev.target.closest('#reset-all-btn')) {
+            resetAll();
         } else if (ev.target.id === 'restore-prompt') {
             api.getSystemPrompt().then(text => {
                 state.settings.systemPrompt = text;
@@ -1017,12 +1174,26 @@ function bindEvents() {
         const saveBtn = ev.target.closest('[data-save-run]');
         if (saveBtn && !saveBtn.disabled) {
             saveRunFromChat(parseInt(saveBtn.dataset.saveRun, 10));
+            return;
+        }
+        const exampleBtn = ev.target.closest('[data-example]');
+        if (exampleBtn) {
+            const ta = document.getElementById('chat-input');
+            ta.value = exampleBtn.dataset.example;
+            autoresizeTextarea(ta);
+            ta.focus();
         }
     });
 
     // Home (/)
     document.getElementById('btn-new-routine').addEventListener('click', openOneshotModal);
     document.getElementById('routines-grid').addEventListener('click', (ev) => {
+        const delBtn = ev.target.closest('[data-delete-routine]');
+        if (delBtn) {
+            ev.stopPropagation();
+            deleteRoutine(parseInt(delBtn.dataset.deleteRoutine, 10));
+            return;
+        }
         const card = ev.target.closest('[data-open-routine]');
         if (card) openRoutineModal(parseInt(card.dataset.openRoutine, 10));
     });
@@ -1101,6 +1272,7 @@ function bindEvents() {
 
 // -------------------- Init --------------------
 async function init() {
+    applyTheme();
     replaceIcons(document);
     applySidebarCollapse();
 
@@ -1123,7 +1295,7 @@ async function init() {
         }
         saveSettings();
     } catch (e) {
-        document.body.innerHTML = `<div style="padding:32px;font-family:Inter,sans-serif;"><h2>Error al cargar la app</h2><p>${escapeHtml(e.message)}</p></div>`;
+        document.body.innerHTML = `<div style="padding:32px;font-family:'Helvetica Neue',sans-serif;"><h2>Error al cargar la app</h2><p>${escapeHtml(e.message)}</p></div>`;
         return;
     }
 

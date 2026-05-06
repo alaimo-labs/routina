@@ -6,7 +6,7 @@
     <title>Routina · Coach de fitness asistido por IA</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
@@ -15,10 +15,10 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-top">
                 <div class="brand">
-                    <div class="brand-logo"><span data-icon="dumbbell" data-size="22"></span></div>
+                    <div class="brand-logo"></div>
                     <div class="brand-meta">
                         <div class="brand-name">Routina</div>
-                        <div class="brand-tag">Coach de fitness IA</div>
+                        <div class="brand-tag">Tu coach personal</div>
                     </div>
                 </div>
                 <button class="icon-btn" id="collapse-sidebar" aria-label="Colapsar barra lateral" type="button">
@@ -44,8 +44,8 @@
 
             <div class="sidebar-context" id="sidebar-chat-section" hidden>
                 <button class="btn-new-chat" id="new-chat-btn" type="button">
-                    <span data-icon="plus"></span>
-                    <span>Nueva conversación</span>
+                    <span data-icon="plus" data-size="13"></span>
+                    <span>Conversación</span>
                 </button>
                 <div class="sidebar-section-label">Conversaciones</div>
                 <div class="chat-list" id="chat-list"></div>
@@ -54,7 +54,7 @@
             <div class="sidebar-spacer"></div>
 
             <div class="sidebar-footer">
-                <a href="/historial" data-link class="nav-item" data-route="/historial">
+                <a href="/history" data-link class="nav-item" data-route="/history">
                     <span data-icon="history"></span>
                     <span>Historial</span>
                 </a>
@@ -62,6 +62,10 @@
                     <span data-icon="settings"></span>
                     <span>Configuración</span>
                 </button>
+                <div class="user-meta">
+                    <div class="user-meta-line">v0.4.1 · es-AR</div>
+                    <div class="user-meta-sub">desarrollado por<br><a href="https://alaimolabs.com" target="_blank" rel="noopener" class="user-meta-link">Alaimo Labs</a> para <a href="https://alaimolabs.com/eva" target="_blank" rel="noopener" class="user-meta-link">AI Evals</a></div>
+                </div>
             </div>
         </aside>
 
@@ -75,14 +79,21 @@
             <!-- ----- /  → Home: rutinas guardadas ----- -->
             <section class="view view-home" id="view-home">
                 <header class="view-header view-header--home">
-                    <div>
-                        <h2>Rutinas</h2>
-                        <p class="view-sub">Tu colección de rutinas guardadas. Generá una nueva con un click.</p>
+                    <div class="view-eyebrow">
+                        <span class="mono-label">01 · Rutinas</span>
+                        <div class="view-eyebrow-rule"></div>
+                        <span class="mono-label">Routina</span>
                     </div>
-                    <button class="btn-cta-large" id="btn-new-routine" type="button">
-                        <span data-icon="plus"></span>
-                        <span>Nueva rutina</span>
-                    </button>
+                    <div class="view-header-row">
+                        <div>
+                            <h2>Tus rutinas guardadas.</h2>
+                            <p class="view-sub">La colección completa, ordenada por fecha. Generá una nueva o revisá las anteriores.</p>
+                        </div>
+                        <button class="btn-cta-large" id="btn-new-routine" type="button">
+                            <span data-icon="plus" data-size="13"></span>
+                            <span>Nueva rutina</span>
+                        </button>
+                    </div>
                 </header>
                 <div class="filters">
                     <input type="text" id="filter-objetivo" class="text-input" placeholder="Filtrar por objetivo…" />
@@ -101,36 +112,44 @@
                         <textarea
                             id="chat-input"
                             class="composer-input"
-                            placeholder="Conversa con Routina. Pedí, refiná, ajustá la rutina turno a turno."
+                            placeholder="Cuanto más concreto seas — objetivo, días disponibles, equipamiento, lesiones — mejor va a ser el plan."
                             rows="1"
                         ></textarea>
                         <button id="send-btn" class="send-btn" type="button" aria-label="Enviar">
-                            <span data-icon="send" data-size="18"></span>
+                            <span>Enviar</span>
+                            <span>→</span>
                         </button>
                     </div>
-                    <div class="composer-hint">Multi-turno: cada mensaje incluye los anteriores como contexto · Enter envía · Shift+Enter newline</div>
+                    <div class="composer-hint">↩ enviar · ⇧ + ↩ nueva línea · cada turno incluye los anteriores como contexto</div>
                 </div>
             </section>
 
             <!-- ----- /agent → placeholder ----- -->
             <section class="view view-agent" id="view-agent">
                 <div class="agent-placeholder">
-                    <div class="agent-ico"><span data-icon="bot" data-size="40"></span></div>
-                    <h2>Modo Agente</h2>
-                    <p>Multi-turno + tool calls + RAG.</p>
-                    <p class="agent-soon">Llega más adelante en el programa de evals.</p>
+                    <div class="view-eyebrow">
+                        <span class="mono-label">03 · Agente</span>
+                        <div class="view-eyebrow-rule"></div>
+                        <span class="mono-label">Routina</span>
+                    </div>
+                    <h2>Modo Agente.</h2>
+                    <p>Multi-turno + tool calls + recuperación. Llega más adelante en el programa de evals.</p>
+                    <p class="agent-soon">· en desarrollo</p>
                     <div class="agent-features">
                         <div class="agent-feature">
-                            <span data-icon="sparkles" data-size="18"></span>
+                            <span class="agent-feature-num">01</span>
                             <span>Function calling</span>
+                            <span class="agent-feature-desc">Tools sobre la rutina</span>
                         </div>
                         <div class="agent-feature">
-                            <span data-icon="search" data-size="18"></span>
+                            <span class="agent-feature-num">02</span>
                             <span>Retrieval (RAG)</span>
+                            <span class="agent-feature-desc">Recuperación de contexto</span>
                         </div>
                         <div class="agent-feature">
-                            <span data-icon="repeat" data-size="18"></span>
+                            <span class="agent-feature-num">03</span>
                             <span>Loop multi-step</span>
+                            <span class="agent-feature-desc">Planifica · ejecuta · revisa</span>
                         </div>
                     </div>
                 </div>
@@ -139,8 +158,13 @@
             <!-- ----- /historial → traza de evals ----- -->
             <section class="view view-historial" id="view-historial">
                 <header class="view-header">
-                    <h2>Historial de corridas</h2>
-                    <p class="view-sub">Toda la traza: éxitos y fallos, one-shot y chat.</p>
+                    <div class="view-eyebrow">
+                        <span class="mono-label">04 · Historial</span>
+                        <div class="view-eyebrow-rule"></div>
+                        <span class="mono-label">Traza de evals</span>
+                    </div>
+                    <h2>Historial de corridas.</h2>
+                    <p class="view-sub">Toda la traza: éxitos y fallos, one-shot y chat. Cada llamada al modelo queda registrada.</p>
                 </header>
                 <div class="filters">
                     <div id="status-pills" class="pills">
@@ -166,11 +190,22 @@
                     </button>
                 </header>
                 <div class="drawer-body">
-                    <div id="api-key-status" class="api-key-status"></div>
-
-                    <div class="field">
-                        <label class="field-label" for="model-select">Modelo</label>
-                        <select id="model-select" class="select-input"></select>
+                    <div class="field-row">
+                        <div class="field">
+                            <span class="field-label">API key</span>
+                            <div id="api-key-status" class="api-key-status"></div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="model-select">Modelo</label>
+                            <select id="model-select" class="select-input"></select>
+                        </div>
+                        <div class="field">
+                            <span class="field-label">Tema</span>
+                            <button class="theme-toggle" id="toggle-theme" type="button" aria-label="Cambiar tema">
+                                <span data-icon="moon" id="theme-icon"></span>
+                                <span id="theme-label">Oscuro</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="field">
@@ -191,7 +226,7 @@
                         <div class="field">
                             <div class="field-label-row">
                                 <label class="field-label" for="system-prompt-input">System prompt</label>
-                                <button class="text-btn" id="restore-prompt" type="button">Restaurar default</button>
+                                <button class="text-btn" id="restore-prompt" type="button">Restaurar default (v0)</button>
                             </div>
                             <textarea id="system-prompt-input" class="textarea-input" rows="14"></textarea>
                         </div>
@@ -210,6 +245,12 @@
 
                     <div class="schema-info">
                         Schema activo: <code id="schema-path">…</code>
+                    </div>
+
+                    <div class="danger-zone">
+                        <span class="field-label danger-label">Zona de peligro</span>
+                        <p class="danger-help">Borra todas las trazas, conversaciones y rutinas guardadas. La acción no se puede deshacer.</p>
+                        <button class="btn btn-danger" id="reset-all-btn" type="button">Borrar todo</button>
                     </div>
                 </div>
             </div>
@@ -241,16 +282,33 @@
                 </header>
                 <div class="modal-body" id="oneshot-body">
                     <div id="oneshot-input-block">
-                        <p class="oneshot-help">Describí el caso del usuario en lenguaje natural. Una sola interacción, una sola rutina.</p>
-                        <textarea id="oneshot-input" class="textarea-input" rows="4" placeholder="Ej: Quiero perder peso, tengo 30 minutos por día, 4 veces por semana, sin equipamiento."></textarea>
+                        <p class="oneshot-help">Describe el caso del usuario en lenguaje natural. Una sola interacción, una sola rutina.</p>
+                        <textarea id="oneshot-input" class="textarea-input" rows="4" placeholder="Ej. Quiero perder peso, tengo 30 minutos por día, 4 veces por semana, sin equipamiento."></textarea>
                         <div class="oneshot-actions">
                             <button class="btn btn-primary" id="oneshot-generate-btn" type="button">
-                                <span data-icon="sparkles" data-size="14"></span>
                                 <span>Generar rutina</span>
+                                <span>→</span>
                             </button>
                         </div>
                     </div>
                     <div id="oneshot-result-block" hidden></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================== Modal de confirmación ========================== -->
+        <div class="modal" id="confirm-modal" hidden>
+            <div class="modal-overlay" data-confirm-cancel></div>
+            <div class="modal-panel modal-panel--confirm">
+                <header class="modal-header">
+                    <h3 id="confirm-title">Confirmar</h3>
+                </header>
+                <div class="modal-body">
+                    <p class="confirm-message" id="confirm-message"></p>
+                    <div class="confirm-actions">
+                        <button class="btn btn-outline" id="confirm-cancel" type="button">Cancelar</button>
+                        <button class="btn btn-primary" id="confirm-ok" type="button">Confirmar</button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -282,6 +282,22 @@ def get_routine(conn: sqlite3.Connection, routine_id: int) -> sqlite3.Row | None
     return cur.fetchone()
 
 
+def delete_routine(conn: sqlite3.Connection, routine_id: int) -> None:
+    conn.execute("DELETE FROM routines WHERE id = ?", (routine_id,))
+    conn.commit()
+
+
+def reset_all(conn: sqlite3.Connection) -> dict[str, int]:
+    """Vacía rutinas, runs y chats. Devuelve el conteo eliminado por tabla."""
+    counts: dict[str, int] = {}
+    for table in ("routines", "runs", "chats"):
+        cur = conn.execute(f"SELECT COUNT(*) AS c FROM {table}")
+        counts[table] = cur.fetchone()["c"]
+        conn.execute(f"DELETE FROM {table}")
+    conn.commit()
+    return counts
+
+
 def distinct_formatos(conn: sqlite3.Connection) -> list[str]:
     cur = conn.execute(
         "SELECT DISTINCT formato FROM routines WHERE formato IS NOT NULL ORDER BY formato"

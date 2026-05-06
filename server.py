@@ -405,6 +405,19 @@ def get_routine(routine_id: int) -> dict[str, Any]:
         conn.close()
 
 
+@app.delete("/api/routines/{routine_id}")
+def delete_routine(routine_id: int) -> dict[str, str]:
+    conn = db.get_conn()
+    try:
+        existing = db.get_routine(conn, routine_id)
+        if existing is None:
+            raise HTTPException(status_code=404, detail="Rutina no encontrada.")
+        db.delete_routine(conn, routine_id)
+        return {"status": "deleted"}
+    finally:
+        conn.close()
+
+
 # ======================================================================================
 # Chats
 # ======================================================================================
@@ -474,8 +487,21 @@ def delete_chat(chat_id: int) -> dict[str, str]:
 
 
 # ======================================================================================
+# Admin
+# ======================================================================================
+@app.post("/api/admin/reset")
+def reset_all() -> dict[str, Any]:
+    conn = db.get_conn()
+    try:
+        counts = db.reset_all(conn)
+        return {"status": "reset", "deleted": counts}
+    finally:
+        conn.close()
+
+
+# ======================================================================================
 # SPA catchall — se ejecuta solo si ningún endpoint anterior matcheó.
-# Permite que rutas cliente como /chat, /agent, /historial sirvan index.html.
+# Permite que rutas cliente como /chat, /agent, /history sirvan index.html.
 # ======================================================================================
 @app.get("/{full_path:path}")
 async def spa_catchall(full_path: str) -> FileResponse:
