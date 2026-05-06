@@ -180,3 +180,9 @@ El frontend es una SPA estática que habla con FastAPI vía estos endpoints (út
 | `GET`    | `/api/config`           | Modelos disponibles, default, si la API key está cargada               |
 | `GET`    | `/api/system-prompt`    | El system prompt por defecto (texto plano)                             |
 | `GET`    | `/api/schema`           | El JSON Schema activo                                                  |
+
+---
+
+## Licencia
+
+MIT — ver [LICENSE](LICENSE). Copyright (c) 2026 MTN LABS LLC d/b/a Alaimo Labs.

@@ -2,6 +2,8 @@
 name = "routina"
 version = "0.1.0"
 description = "App de coaching de fitness asistida por IA — caso de estudio del programa de evals (alaimolabs.com/es/eva)"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115,<1",
