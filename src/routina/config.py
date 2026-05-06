@@ -11,8 +11,8 @@ SCHEMAS_DIR = ROOT / "schemas"
 DEFAULT_PROMPT_PATH = PROMPTS_DIR / "routina_default.txt"
 DEFAULT_SCHEMA_PATH = SCHEMAS_DIR / "routina_v1.json"
 
-DEFAULT_MODEL = "gpt-4o-mini"
-AVAILABLE_MODELS = ["gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-4.1-mini"]
+DEFAULT_MODEL = "gpt-5.4-mini"
+AVAILABLE_MODELS = ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano"]
 
 
 def load_env() -> None:

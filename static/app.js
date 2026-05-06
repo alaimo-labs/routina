@@ -49,6 +49,8 @@ function replaceIcons(root = document) {
 }
 
 // -------------------- Estado --------------------
+const SETTINGS_KEY = 'routina:settings';
+
 const state = {
     route: window.location.pathname,
     config: null,
@@ -69,6 +71,20 @@ const state = {
     sidebarCollapsed: localStorage.getItem('routina:sidebar-collapsed') === '1',
     oneshot: { lastRunId: null, isSaved: false },
 };
+
+function loadSettings() {
+    try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (raw) return JSON.parse(raw);
+    } catch {}
+    return null;
+}
+
+function saveSettings() {
+    try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+    } catch {}
+}
 
 // -------------------- API --------------------
 const api = {
@@ -920,6 +936,7 @@ function commitSettingsFromDOM() {
     state.settings.systemPrompt = document.getElementById('system-prompt-input').value;
     state.settings.promptId = document.getElementById('prompt-id-input').value.trim();
     state.settings.promptVersion = document.getElementById('prompt-version-input').value.trim();
+    saveSettings();
 }
 
 // -------------------- Sidebar collapse --------------------
@@ -963,6 +980,7 @@ function bindEvents() {
             api.getSystemPrompt().then(text => {
                 state.settings.systemPrompt = text;
                 document.getElementById('system-prompt-input').value = text;
+                saveSettings();
             });
         }
     });
@@ -972,10 +990,12 @@ function bindEvents() {
             state.settings.promptMode = mode;
             document.getElementById('prompt-local-config').hidden = mode !== 'local';
             document.getElementById('prompt-openai-config').hidden = mode !== 'openai_id';
+            saveSettings();
         });
     });
     document.getElementById('model-select').addEventListener('change', (ev) => {
         state.settings.model = ev.target.value;
+        saveSettings();
     });
     ['system-prompt-input', 'prompt-id-input', 'prompt-version-input'].forEach(id => {
         document.getElementById(id).addEventListener('input', commitSettingsFromDOM);
@@ -1086,8 +1106,22 @@ async function init() {
 
     try {
         state.config = await api.getConfig();
-        state.settings.model = state.config.default_model;
-        state.settings.systemPrompt = await api.getSystemPrompt();
+        const saved = loadSettings();
+        const defaultPrompt = await api.getSystemPrompt();
+        if (saved) {
+            // Modelo: aceptar el guardado solo si sigue disponible.
+            state.settings.model = state.config.available_models.includes(saved.model)
+                ? saved.model
+                : state.config.default_model;
+            state.settings.promptMode = saved.promptMode === 'openai_id' ? 'openai_id' : 'local';
+            state.settings.systemPrompt = saved.systemPrompt || defaultPrompt;
+            state.settings.promptId = saved.promptId || '';
+            state.settings.promptVersion = saved.promptVersion || '';
+        } else {
+            state.settings.model = state.config.default_model;
+            state.settings.systemPrompt = defaultPrompt;
+        }
+        saveSettings();
     } catch (e) {
         document.body.innerHTML = `<div style="padding:32px;font-family:Inter,sans-serif;"><h2>Error al cargar la app</h2><p>${escapeHtml(e.message)}</p></div>`;
         return;
