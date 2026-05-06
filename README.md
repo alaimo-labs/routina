@@ -31,7 +31,7 @@ Cierra y vuelve a abrir la Terminal después de que termine.
 **2. Clonar el repositorio y entrar a la carpeta**:
 
 ```bash
-git clone <URL-DEL-REPO> routina
+git clone https://github.com/alaimo-labs/routina routina
 cd routina
 ```
 
@@ -73,7 +73,7 @@ Cierra y vuelve a abrir PowerShell después de que termine.
 **2. Clonar el repositorio y entrar a la carpeta**:
 
 ```powershell
-git clone <URL-DEL-REPO> routina
+git clone https://github.com/alaimo-labs/routina routina
 cd routina
 ```
 
@@ -103,13 +103,17 @@ Después abre tu navegador en `http://localhost:8000`. Listo.
 
 ## Cómo se usa
 
-La app abre con tres vistas accesibles desde la barra lateral izquierda: **Conversación**, **Rutinas guardadas** e **Historial**.
+La app expone tres "modos" como rutas distintas, alineadas con la progresión del programa de evals (cada una representa un escope de evaluación distinto):
 
-1. **Conversación**: escribes el pedido en el campo inferior (ej: *"Quiero perder peso, tengo 30 minutos, 4 veces por semana, sin equipamiento"*) y presionas Enter. La rutina aparece como respuesta.
-2. **Configuración** (botón al pie de la barra lateral): eliges el modelo, decides si editar el system prompt en local o usar uno guardado en OpenAI (con su `prompt_id`).
-3. La app te muestra tres capas de validación: parseo del JSON, validación contra el schema, y la rutina renderizada.
-4. Si el resultado te gusta, puedes guardar la rutina con un click. Aparece en la vista **Rutinas guardadas**.
-5. Cada corrida (incluso las que fallaron) queda registrada en **Historial**.
+- **`/` Rutinas (one-shot)** — biblioteca de rutinas guardadas con un botón **"+ Nueva rutina"** que abre un modal. Escribes el caso, generás la rutina y decidís si guardarla o descartarla. Cada generación es independiente, sin contexto previo. Es el modo más simple para evaluar calidad de salida pura.
+- **`/chat` Chat (multi-turno)** — conversación al estilo ChatGPT/Claude. Cada turno se acumula en el contexto del LLM, así podés refinar (*"hacela más corta"*, *"cambiá el formato a HIIT"*). El historial de chats persiste en la barra lateral. Pensado para evaluar coherencia conversacional.
+- **`/agent` Agente** — placeholder por ahora. Vendrá en encuentros futuros del curso con tool calling, RAG y loop multi-step.
+
+Adicionalmente hay **`/historial`**: la traza completa de evals — toda corrida (one-shot o chat, exitosa o fallida) queda registrada con su input, prompt, respuesta cruda, errores y mensajes de la traza.
+
+**Configuración** (botón al pie de la barra lateral): eliges el modelo, decides si editar el system prompt en local o usar uno guardado en OpenAI (con su `prompt_id`).
+
+**Validación de salida**: la app valida cada respuesta del LLM en tres capas (parseo JSON, conformidad con el schema, contenido) y te muestra cada resultado por separado — útil para razonar sobre dónde falla.
 
 ---
 
@@ -135,15 +139,15 @@ La app abre con tres vistas accesibles desde la barra lateral izquierda: **Conve
 
 ```
 routina/
-├── server.py                   # FastAPI: endpoints + sirve la UI
+├── server.py                   # FastAPI: endpoints + sirve la SPA
 ├── static/
-│   ├── index.html              # Layout completo de la app
+│   ├── index.html              # Layout (sidebar + 4 vistas + modales)
 │   ├── styles.css              # Tema visual
-│   └── app.js                  # Lógica del frontend (vanilla JS)
+│   └── app.js                  # Router cliente + lógica (vanilla JS)
 ├── src/routina/
 │   ├── config.py               # Rutas y carga de .env
-│   ├── db.py                   # Persistencia SQLite (runs y routines)
-│   ├── llm.py                  # Wrapper de la API de OpenAI
+│   ├── db.py                   # SQLite: chats, runs, routines
+│   ├── llm.py                  # Wrapper de la API de OpenAI (Responses)
 │   └── validate.py             # Validación contra el JSON Schema
 ├── prompts/
 │   └── routina_default.txt     # System prompt por defecto
@@ -152,4 +156,23 @@ routina/
 └── data/                       # SQLite (se crea solo, no se versiona)
 ```
 
-La base de datos vive en `data/routina.db`. Si quieres inspeccionarla a mano, puedes descargar [DB Browser for SQLite](https://sqlitebrowser.org/) y abrirla.
+La base de datos vive en `data/routina.db`. Si quieres inspeccionarla a mano, puedes descargar [DB Browser for SQLite](https://sqlitebrowser.org/) y abrirla. Tres tablas: `chats` (conversaciones de `/chat`), `runs` (toda llamada al LLM, con o sin chat) y `routines` (rutinas guardadas, con FK al run que las generó).
+
+## API HTTP
+
+El frontend es una SPA estática que habla con FastAPI vía estos endpoints (útil si querés correr scripts de eval contra el mismo backend):
+
+| Método | Path | Propósito |
+| --- | --- | --- |
+| `POST` | `/api/oneshot/generate` | Generación independiente, sin chat ni contexto previo |
+| `POST` | `/api/chat/generate` | Generación dentro de un chat: incluye los turnos previos como contexto |
+| `GET` | `/api/chats?mode=chat` | Lista de chats persistidos |
+| `GET` | `/api/chats/{id}` | Detalle de un chat con todos sus runs |
+| `DELETE` | `/api/chats/{id}` | Borra un chat (las rutinas guardadas se mantienen) |
+| `GET` | `/api/runs?status=...` | Toda la traza de runs |
+| `GET` | `/api/runs/{id}` | Detalle de un run con messages, errores y respuesta cruda |
+| `POST` | `/api/routines` | Body `{run_id}`. Guarda como rutina el output del run |
+| `GET` | `/api/routines` | Lista de rutinas guardadas (filtros: `objetivo`, `formato`) |
+| `GET` | `/api/config` | Modelos disponibles, default, si la API key está cargada |
+| `GET` | `/api/system-prompt` | El system prompt por defecto (texto plano) |
+| `GET` | `/api/schema` | El JSON Schema activo |
