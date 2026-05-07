@@ -1062,7 +1062,7 @@ function openDrawer() {
     apiStatus.className = 'api-key-status ' + (state.config.has_api_key ? 'ok' : 'missing');
     apiStatus.innerHTML = state.config.has_api_key
         ? `${icon('check', 14)} <span>Configurada</span>`
-        : `${icon('alert-triangle', 14)} <span>Falta en .env</span>`;
+        : `${icon('alert-triangle', 14)} <span>Faltante</span>`;
 
     const modelSel = document.getElementById('model-select');
     modelSel.innerHTML = state.config.available_models
