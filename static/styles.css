@@ -819,17 +819,28 @@ code {
 
 /* Exercises as a hairline-divided list (Clínico) */
 .exercises-list {
-    display: flex;
-    flex-direction: column;
-    border-top: 1px solid var(--line);
-}
-.exercise-row {
     display: grid;
     grid-template-columns: 24px 1fr auto auto auto;
-    gap: 14px;
+    column-gap: 14px;
+}
+.exercise-header,
+.exercise-row {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
     align-items: baseline;
-    padding: 14px 4px;
     border-bottom: 1px solid var(--line-soft);
+}
+.exercise-header {
+    padding: 8px 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+}
+.exercise-row {
+    padding: 14px 4px;
 }
 .exercise-row .ex-num {
     font-family: var(--font-mono);
@@ -852,6 +863,11 @@ code {
     white-space: nowrap;
 }
 .exercise-row .ex-rest { color: var(--ink-muted); }
+.exercise-header .ex-prescription,
+.exercise-header .ex-rest {
+    text-align: right;
+    white-space: nowrap;
+}
 .exercise-row .ex-notes-cell {
     grid-column: 2 / -1;
     font-size: 13px;

@@ -324,19 +324,30 @@ function renderRoutineHTML(payload) {
     const advertencia = (payload.advertencia || '').trim();
     const notas = (payload.notas_generales || '').trim();
 
+    const ejerciciosHeader = `
+        <div class="exercise-header">
+            <span></span>
+            <span>Ejercicio</span>
+            <span class="ex-prescription">Series × Reps</span>
+            <span class="ex-rest">Descanso</span>
+            <span></span>
+        </div>
+    `;
+
     const ejercicios = (payload.ejercicios || []).map((ej, i) => {
         const nombre = escapeHtml(ej.nombre || 'Ejercicio');
         const series = ej.series ?? '?';
         const reps = escapeHtml(String(ej.repeticiones ?? '?'));
         const descanso = ej.descanso_seg ?? 0;
+        const descansoLabel = descanso > 0 ? `${descanso}s` : '—';
         const exNotas = (ej.notas || '').trim();
         const num = String(i + 1).padStart(2, '0');
         return `
             <div class="exercise-row">
                 <span class="ex-num">${num}</span>
                 <span class="ex-name">${nombre}</span>
-                <span class="ex-prescription">${series}×${reps}</span>
-                <span class="ex-rest">${descanso}s</span>
+                <span class="ex-prescription">${series} × ${reps}</span>
+                <span class="ex-rest">${descansoLabel}</span>
                 ${exNotas ? `<span class="ex-notes-cell">${escapeHtml(exNotas)}</span>` : '<span></span>'}
             </div>
         `;
@@ -365,7 +376,7 @@ function renderRoutineHTML(payload) {
             </div>
             <div class="routine-meta-item">
                 <div class="label">Formato</div>
-                <div class="value value-sm">${formato}</div>
+                <div class="value">${formato}</div>
             </div>
         </div>
         ${advertencia ? `
@@ -374,8 +385,7 @@ function renderRoutineHTML(payload) {
                 <div class="txt">${escapeHtml(advertencia)}</div>
             </div>
         ` : ''}
-        <div class="section-heading">Ejercicios</div>
-        <div class="exercises-list">${ejercicios}</div>
+        <div class="exercises-list">${ejerciciosHeader}${ejercicios}</div>
         ${notas ? `
             <div class="section-heading">Notas generales</div>
             <div class="notas-generales">${notasHtml}</div>
