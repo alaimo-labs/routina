@@ -46,21 +46,22 @@ Pega el siguiente texto en la Terminal y luego haz Enter:
 cp .env.example .env
 ```
 
-Después, pega el siguienet texto en la Terminal y haz Enter (se abrirá finer):
+Después, pega el siguiente texto en la Terminal y haz Enter (se abrirá Finder):
 
 ```
 open .
 ```
 
-Una vez en finder, haz `Command + Shift + .`
+Una vez en finder, haz `Command + Shift + .` (Command + Shift + Punto).
 
 Verás los archivos ocultos (los que comienzan con ".").
 
-Haz click derecho al archivo `.env` y abrelo con cualquier editor (por ejemplo TextEdit) y pega tu API key después del `=`. El archivo tiene que quedar así:
+Haz click derecho al archivo `.env` y abrelo con cualquier editor (por ejemplo TextEdit) y pega el API key (que obtuviste previamente de OpenAI) después del `=`. El archivo tiene que quedar así:
 
 ```
-OPENAI_API_KEY=sk-...tu-key-aquí...
+OPENAI_API_KEY=sk-proj-AbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYz
 ```
+NOTA: El código `sk-proj-AbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYz` será diferente, porque cada quien tien el suyo propio (API Key).
 
 Guarda el archivo.
 
@@ -109,7 +110,7 @@ copy .env.example .env
 notepad .env
 ```
 
-Se abre el Bloc de notas. Pega tu API key después del `=` y guarda. El archivo tiene que quedar así:
+Se abre el Block de notas. Pega tu API key después del `=` y guarda. El archivo tiene que quedar así:
 
 ```
 OPENAI_API_KEY=sk-...tu-key-aquí...
