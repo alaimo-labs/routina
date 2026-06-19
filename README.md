@@ -46,11 +46,23 @@ Pega el siguiente texto en la Terminal y luego haz Enter:
 cp .env.example .env
 ```
 
-Después, abre el archivo `.env` con cualquier editor y pega tu API key después del `=`. El archivo tiene que quedar así:
+Después, pega el siguienet texto en la Terminal y haz Enter (se abrirá finer):
+
+```
+open .
+```
+
+Una vez en finder, haz `Command + Shift + .`
+
+Verás los archivos ocultos (los que comienzan con ".").
+
+Haz click derecho al archivo `.env` y abrelo con cualquier editor (por ejemplo TextEdit) y pega tu API key después del `=`. El archivo tiene que quedar así:
 
 ```
 OPENAI_API_KEY=sk-...tu-key-aquí...
 ```
+
+Guarda el archivo.
 
 **4. Instalar las dependencias y levantar la app**:
 
