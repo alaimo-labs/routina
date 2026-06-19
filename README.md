@@ -25,10 +25,13 @@ Abre la app **Terminal** (`Cmd + Espacio`, escribe "Terminal", Enter) y pega los
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
+Luego de pegar esa línea en la Terminal, haz Enter.
 
 Cierra y vuelve a abrir la Terminal después de que termine.
 
 **2. Clonar el repositorio y entrar a la carpeta**:
+
+Pega el siguiente texto en la Terminal y luego haz Enter:
 
 ```bash
 git clone https://github.com/alaimo-labs/routina routina
@@ -37,17 +40,21 @@ cd routina
 
 **3. Configurar tu API key**:
 
+Pega el siguiente texto en la Terminal y luego haz Enter:
+
 ```bash
 cp .env.example .env
 ```
 
-Después abre el archivo `.env` con cualquier editor y pega tu API key después del `=`. El archivo tiene que quedar así:
+Después, abre el archivo `.env` con cualquier editor y pega tu API key después del `=`. El archivo tiene que quedar así:
 
 ```
 OPENAI_API_KEY=sk-...tu-key-aquí...
 ```
 
 **4. Instalar las dependencias y levantar la app**:
+
+Pega el siguiente texto en la Terminal y luego haz Enter:
 
 ```bash
 uv sync
@@ -64,6 +71,8 @@ Abre **PowerShell** (botón inicio, escribe "PowerShell", Enter).
 
 **1. Instalar `uv`**:
 
+Pega el siguiente texto y luego haz Enter:
+
 ```powershell
 irm https://astral.sh/uv/install.ps1 | iex
 ```
@@ -72,12 +81,16 @@ Cierra y vuelve a abrir PowerShell después de que termine.
 
 **2. Clonar el repositorio y entrar a la carpeta**:
 
+Pega el siguiente texto y luego haz Enter:
+
 ```powershell
 git clone https://github.com/alaimo-labs/routina routina
 cd routina
 ```
 
 **3. Configurar tu API key**:
+
+Pega el siguiente texto y luego haz Enter:
 
 ```powershell
 copy .env.example .env
@@ -91,6 +104,8 @@ OPENAI_API_KEY=sk-...tu-key-aquí...
 ```
 
 **4. Instalar las dependencias y levantar la app**:
+
+Pega el siguiente texto y luego haz Enter:
 
 ```powershell
 uv sync
