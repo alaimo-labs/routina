@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS runs (
   output_tokens   INTEGER,
   num_turns       INTEGER NOT NULL DEFAULT 1,
   status          TEXT NOT NULL,
+  provider        TEXT NOT NULL DEFAULT 'openai',
   chat_id         INTEGER REFERENCES chats(id) ON DELETE SET NULL
 );
 
@@ -72,6 +73,12 @@ def init_schema(conn: sqlite3.Connection) -> None:
     if "chat_id" not in existing_cols:
         conn.execute("ALTER TABLE runs ADD COLUMN chat_id INTEGER")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_runs_chat_id ON runs(chat_id)")
+    # Migración: agregar provider a runs. Las corridas previas fueron todas OpenAI,
+    # así que el DEFAULT las backfillea correctamente.
+    if "provider" not in existing_cols:
+        conn.execute(
+            "ALTER TABLE runs ADD COLUMN provider TEXT NOT NULL DEFAULT 'openai'"
+        )
     # Migración: agregar mode a chats si viene de una versión anterior.
     cur = conn.execute("PRAGMA table_info(chats)")
     chat_cols = {row[1] for row in cur.fetchall()}
@@ -88,10 +95,8 @@ def insert_run(
     conn: sqlite3.Connection,
     *,
     user_input: str,
-    prompt_mode: str,
+    provider: str,
     system_prompt: str | None,
-    prompt_id: str | None,
-    prompt_version: str | None,
     schema_path: str,
     model: str,
     messages: list[dict[str, Any]],
@@ -112,16 +117,20 @@ def insert_run(
         INSERT INTO runs (
             created_at, user_input, prompt_mode, system_prompt, prompt_id, prompt_version,
             schema_path, model, messages_json, tool_calls_json, raw_response, parsed_json,
-            parse_error, schema_errors, latency_ms, input_tokens, output_tokens, num_turns, status, chat_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            parse_error, schema_errors, latency_ms, input_tokens, output_tokens, num_turns,
+            status, provider, chat_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             _now_iso(),
             user_input,
-            prompt_mode,
+            # prompt_mode/prompt_id/prompt_version son columnas vestigiales del
+            # modo Stored Prompt (removido). Se conservan por compatibilidad con
+            # bases existentes; escribimos constantes para satisfacer NOT NULL.
+            "local",
             system_prompt,
-            prompt_id,
-            prompt_version,
+            None,
+            None,
             schema_path,
             model,
             json.dumps(messages, ensure_ascii=False),
@@ -135,6 +144,7 @@ def insert_run(
             output_tokens,
             num_turns,
             status,
+            provider,
             chat_id,
         ),
     )

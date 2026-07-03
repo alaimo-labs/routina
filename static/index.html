@@ -211,20 +211,7 @@
                             </button>
                         </div>
                     </div>
-
-                    <div class="field">
-                        <span class="field-label">Modo de prompt</span>
-                        <div class="radio-row">
-                            <label class="radio-opt">
-                                <input type="radio" name="prompt-mode" value="local" checked />
-                                <span>System prompt local</span>
-                            </label>
-                            <label class="radio-opt">
-                                <input type="radio" name="prompt-mode" value="openai_id" />
-                                <span>Prompt guardado en OpenAI</span>
-                            </label>
-                        </div>
-                    </div>
+                    <div id="api-key-hint" class="api-key-hint" hidden></div>
 
                     <div id="prompt-local-config">
                         <div class="field">
@@ -233,17 +220,6 @@
                                 <button class="text-btn" id="restore-prompt" type="button">Restaurar default (v0)</button>
                             </div>
                             <textarea id="system-prompt-input" class="textarea-input" rows="14"></textarea>
-                        </div>
-                    </div>
-
-                    <div id="prompt-openai-config" hidden>
-                        <div class="field">
-                            <label class="field-label" for="prompt-id-input">Prompt ID</label>
-                            <input type="text" id="prompt-id-input" class="text-input" placeholder="pmpt_…" />
-                        </div>
-                        <div class="field">
-                            <label class="field-label" for="prompt-version-input">Versión (opcional)</label>
-                            <input type="text" id="prompt-version-input" class="text-input" placeholder="ej. 3" />
                         </div>
                     </div>
 

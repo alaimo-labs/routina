@@ -65,10 +65,7 @@ const state = {
     isGenerating: false,
     settings: {
         model: '',
-        promptMode: 'local',
         systemPrompt: '',
-        promptId: '',
-        promptVersion: '',
     },
     routinesFilter: { objetivo: '', formato: '' },
     runsFilter: { status: '' },
@@ -90,6 +87,18 @@ function saveSettings() {
     try {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
     } catch {}
+}
+
+// Proveedor del modelo actualmente seleccionado (según el registro de /api/config).
+function providerForModel(model) {
+    const m = (state.config?.available_models || []).find(x => x.id === model);
+    return m ? m.provider : 'openai';
+}
+
+// ¿El proveedor del modelo seleccionado tiene su API key configurada?
+function selectedProviderHasKey() {
+    const provider = providerForModel(state.settings.model);
+    return Boolean(state.config?.providers?.[provider]);
 }
 
 // -------------------- API --------------------
@@ -655,8 +664,8 @@ async function renderHistorial() {
             <div class="run-row" data-open-run="${r.id}">
                 <div class="top">
                     ${statusPillHtml(r.status)}
+                    ${neutralPillHtml(r.provider || 'openai')}
                     ${neutralPillHtml(r.model)}
-                    ${neutralPillHtml(r.prompt_mode === 'local' ? 'prompt local' : 'prompt openai')}
                 </div>
                 <div class="preview">${escapeHtml(truncated || '(sin input)')}</div>
                 <div class="meta">
@@ -732,19 +741,10 @@ async function openRunModal(id) {
         </div>
     `;
     const inputPane = `<div data-pane="input"><div class="code-block">${escapeHtml(data.user_input || '(vacío)')}</div></div>`;
-    let promptPane;
-    if (data.prompt_mode === 'local') {
-        promptPane = `<div data-pane="prompt" hidden>
-            <div style="color:var(--text-muted);font-size:.88rem;margin-bottom:8px;">System prompt local usado:</div>
-            <div class="code-block">${escapeHtml(data.system_prompt || '')}</div>
-        </div>`;
-    } else {
-        promptPane = `<div data-pane="prompt" hidden>
-            <div style="color:var(--text-muted);font-size:.88rem;margin-bottom:8px;">Prompt guardado en OpenAI:</div>
-            <div><strong>ID:</strong> <code>${escapeHtml(data.prompt_id || '')}</code></div>
-            ${data.prompt_version ? `<div style="margin-top:6px;"><strong>Versión:</strong> <code>${escapeHtml(data.prompt_version)}</code></div>` : ''}
-        </div>`;
-    }
+    const promptPane = `<div data-pane="prompt" hidden>
+        <div style="color:var(--text-muted);font-size:.88rem;margin-bottom:8px;">System prompt usado:</div>
+        <div class="code-block">${escapeHtml(data.system_prompt || '')}</div>
+    </div>`;
     const responsePane = `<div data-pane="response" hidden>
         ${data.parsed_json
             ? `<div class="code-block">${escapeHtml(JSON.stringify(data.parsed_json, null, 2))}</div>`
@@ -765,6 +765,7 @@ async function openRunModal(id) {
     const headerInfo = `
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
             ${statusPillHtml(data.status)}
+            ${neutralPillHtml(data.provider || 'openai')}
             ${neutralPillHtml(data.model)}
             <span style="color:var(--text-muted);font-size:.82rem;">${relativeTime(data.created_at)}</span>
             <span style="color:var(--text-muted);font-size:.82rem;display:inline-flex;gap:4px;align-items:center;">${icon('timer', 12)} ${data.latency_ms ?? '—'} ms</span>
@@ -806,8 +807,8 @@ async function runOneshotGenerate() {
         showToast('Escribe el caso del usuario');
         return;
     }
-    if (!state.config.has_api_key) {
-        showToast('Falta OPENAI_API_KEY en .env');
+    if (!selectedProviderHasKey()) {
+        showToast(`Falta la API key de ${providerForModel(state.settings.model)} en .env`);
         return;
     }
     const btn = document.getElementById('oneshot-generate-btn');
@@ -816,11 +817,8 @@ async function runOneshotGenerate() {
 
     const body = {
         user_input: text,
-        prompt_mode: state.settings.promptMode,
         model: state.settings.model,
-        system_prompt: state.settings.promptMode === 'local' ? state.settings.systemPrompt : null,
-        prompt_id: state.settings.promptMode === 'openai_id' ? state.settings.promptId : null,
-        prompt_version: state.settings.promptMode === 'openai_id' ? (state.settings.promptVersion || null) : null,
+        system_prompt: state.settings.systemPrompt,
     };
 
     try {
@@ -989,8 +987,8 @@ async function chatSend() {
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
     if (!text) return;
-    if (!state.config.has_api_key) {
-        showToast('Falta OPENAI_API_KEY en .env');
+    if (!selectedProviderHasKey()) {
+        showToast(`Falta la API key de ${providerForModel(state.settings.model)} en .env`);
         return;
     }
 
@@ -1003,11 +1001,8 @@ async function chatSend() {
 
     const body = {
         user_input: text,
-        prompt_mode: state.settings.promptMode,
         model: state.settings.model,
-        system_prompt: state.settings.promptMode === 'local' ? state.settings.systemPrompt : null,
-        prompt_id: state.settings.promptMode === 'openai_id' ? state.settings.promptId : null,
-        prompt_version: state.settings.promptMode === 'openai_id' ? (state.settings.promptVersion || null) : null,
+        system_prompt: state.settings.systemPrompt,
         chat_id: state.currentChatId,
     };
 
@@ -1068,33 +1063,48 @@ function openDrawer() {
     state.drawerOpen = true;
     document.getElementById('settings-drawer').hidden = false;
 
+    // El <select> se agrupa por proveedor con <optgroup>.
+    const byProvider = {};
+    (state.config.available_models || []).forEach(m => {
+        (byProvider[m.provider] = byProvider[m.provider] || []).push(m.id);
+    });
+    const modelSel = document.getElementById('model-select');
+    modelSel.innerHTML = Object.entries(byProvider)
+        .map(([provider, ids]) => `<optgroup label="${escapeHtml(provider)}">${ids
+            .map(id => `<option value="${escapeHtml(id)}" ${id === state.settings.model ? 'selected' : ''}>${escapeHtml(id)}</option>`)
+            .join('')}</optgroup>`)
+        .join('');
+
+    refreshApiKeyStatus();
+
+    document.getElementById('system-prompt-input').value = state.settings.systemPrompt;
+    document.getElementById('schema-path').textContent = state.config.schema_path;
+}
+// El estado de la API key es el del proveedor del modelo seleccionado.
+function refreshApiKeyStatus() {
     const apiStatus = document.getElementById('api-key-status');
-    apiStatus.className = 'api-key-status ' + (state.config.has_api_key ? 'ok' : 'missing');
-    apiStatus.innerHTML = state.config.has_api_key
+    if (!apiStatus) return;
+    const has = selectedProviderHasKey();
+    apiStatus.className = 'api-key-status ' + (has ? 'ok' : 'missing');
+    apiStatus.innerHTML = has
         ? `${icon('check', 14)} <span>Configurada</span>`
         : `${icon('alert-triangle', 14)} <span>Faltante</span>`;
 
-    const modelSel = document.getElementById('model-select');
-    modelSel.innerHTML = state.config.available_models
-        .map(m => `<option value="${escapeHtml(m)}" ${m === state.settings.model ? 'selected' : ''}>${escapeHtml(m)}</option>`)
-        .join('');
-
-    document.querySelector(`input[name="prompt-mode"][value="${state.settings.promptMode}"]`).checked = true;
-    document.getElementById('prompt-local-config').hidden = state.settings.promptMode !== 'local';
-    document.getElementById('prompt-openai-config').hidden = state.settings.promptMode !== 'openai_id';
-
-    document.getElementById('system-prompt-input').value = state.settings.systemPrompt;
-    document.getElementById('prompt-id-input').value = state.settings.promptId;
-    document.getElementById('prompt-version-input').value = state.settings.promptVersion;
-    document.getElementById('schema-path').textContent = state.config.schema_path;
+    const hint = document.getElementById('api-key-hint');
+    if (!hint) return;
+    if (has) {
+        hint.hidden = true;
+    } else {
+        const provider = providerForModel(state.settings.model);
+        const envVar = state.config?.provider_envs?.[provider] || 'la variable de entorno';
+        hint.hidden = false;
+        hint.innerHTML = `Configura tu API Key de ${escapeHtml(provider)} en <code>${escapeHtml(envVar)}</code>`;
+    }
 }
 function closeDrawer() { state.drawerOpen = false; document.getElementById('settings-drawer').hidden = true; }
 function commitSettingsFromDOM() {
     state.settings.model = document.getElementById('model-select').value;
-    state.settings.promptMode = document.querySelector('input[name="prompt-mode"]:checked').value;
     state.settings.systemPrompt = document.getElementById('system-prompt-input').value;
-    state.settings.promptId = document.getElementById('prompt-id-input').value.trim();
-    state.settings.promptVersion = document.getElementById('prompt-version-input').value.trim();
     saveSettings();
 }
 
@@ -1171,22 +1181,12 @@ function bindEvents() {
             })();
         }
     });
-    document.querySelectorAll('input[name="prompt-mode"]').forEach(r => {
-        r.addEventListener('change', () => {
-            const mode = document.querySelector('input[name="prompt-mode"]:checked').value;
-            state.settings.promptMode = mode;
-            document.getElementById('prompt-local-config').hidden = mode !== 'local';
-            document.getElementById('prompt-openai-config').hidden = mode !== 'openai_id';
-            saveSettings();
-        });
-    });
     document.getElementById('model-select').addEventListener('change', (ev) => {
         state.settings.model = ev.target.value;
         saveSettings();
+        refreshApiKeyStatus();
     });
-    ['system-prompt-input', 'prompt-id-input', 'prompt-version-input'].forEach(id => {
-        document.getElementById(id).addEventListener('input', commitSettingsFromDOM);
-    });
+    document.getElementById('system-prompt-input').addEventListener('input', commitSettingsFromDOM);
 
     // Composer (/chat)
     const chatInput = document.getElementById('chat-input');
@@ -1319,15 +1319,13 @@ async function init() {
         state.config = await api.getConfig();
         const saved = loadSettings();
         const defaultPrompt = await api.getSystemPrompt();
+        const availableIds = (state.config.available_models || []).map(m => m.id);
         if (saved) {
             // Modelo: aceptar el guardado solo si sigue disponible.
-            state.settings.model = state.config.available_models.includes(saved.model)
+            state.settings.model = availableIds.includes(saved.model)
                 ? saved.model
                 : state.config.default_model;
-            state.settings.promptMode = saved.promptMode === 'openai_id' ? 'openai_id' : 'local';
             state.settings.systemPrompt = saved.systemPrompt || defaultPrompt;
-            state.settings.promptId = saved.promptId || '';
-            state.settings.promptVersion = saved.promptVersion || '';
         } else {
             state.settings.model = state.config.default_model;
             state.settings.systemPrompt = defaultPrompt;

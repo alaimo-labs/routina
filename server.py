@@ -48,9 +48,10 @@ async def index() -> FileResponse:
 @app.get("/api/config")
 def get_config() -> dict[str, Any]:
     return {
-        "available_models": config.AVAILABLE_MODELS,
+        "available_models": config.MODELS,
         "default_model": config.DEFAULT_MODEL,
-        "has_api_key": bool(config.get_api_key()),
+        "providers": config.providers_with_key(),
+        "provider_envs": config.PROVIDER_ENV,
         "schema_path": str(config.DEFAULT_SCHEMA_PATH.relative_to(config.ROOT)),
     }
 
@@ -70,20 +71,14 @@ def get_schema() -> dict[str, Any]:
 # ======================================================================================
 class OneshotGenerateRequest(BaseModel):
     user_input: str = Field(..., min_length=1)
-    prompt_mode: str = Field(..., pattern="^(local|openai_id)$")
     model: str
     system_prompt: Optional[str] = None
-    prompt_id: Optional[str] = None
-    prompt_version: Optional[str] = None
 
 
 class ChatGenerateRequest(BaseModel):
     user_input: str = Field(..., min_length=1)
-    prompt_mode: str = Field(..., pattern="^(local|openai_id)$")
     model: str
     system_prompt: Optional[str] = None
-    prompt_id: Optional[str] = None
-    prompt_version: Optional[str] = None
     chat_id: Optional[int] = None
 
 
@@ -133,10 +128,8 @@ def _validate_and_persist_run(
         run_id = db.insert_run(
             conn,
             user_input=req.user_input,
-            prompt_mode=req.prompt_mode,
-            system_prompt=req.system_prompt if req.prompt_mode == "local" else None,
-            prompt_id=req.prompt_id if req.prompt_mode == "openai_id" else None,
-            prompt_version=req.prompt_version if req.prompt_mode == "openai_id" else None,
+            provider=config.provider_for(req.model),
+            system_prompt=req.system_prompt,
             schema_path=str(config.DEFAULT_SCHEMA_PATH.relative_to(config.ROOT)),
             model=result.model,
             messages=result.messages,
@@ -160,33 +153,30 @@ def _validate_and_persist_run(
     return run_id, status, schema_errors
 
 
-def _common_pre_checks(req) -> None:
-    if not config.get_api_key():
+def _common_pre_checks(req) -> str:
+    """Valida que el proveedor del modelo tenga API key. Devuelve el proveedor."""
+    provider = config.provider_for(req.model)
+    if not config.get_api_key(provider):
+        env_var = config.PROVIDER_ENV.get(provider, "la API key")
         raise HTTPException(
             status_code=400,
-            detail="OPENAI_API_KEY no está configurada. Edita el archivo .env y vuelve a iniciar el servidor.",
+            detail=f"{env_var} no está configurada. Edita el archivo .env y vuelve a iniciar el servidor.",
         )
-    if req.prompt_mode == "openai_id" and not (req.prompt_id and req.prompt_id.strip()):
-        raise HTTPException(
-            status_code=400,
-            detail="Falta el prompt_id. Cárgalo en Configuración o cambia a modo local.",
-        )
+    return provider
 
 
 @app.post("/api/oneshot/generate")
 def oneshot_generate(req: OneshotGenerateRequest) -> dict[str, Any]:
     """Generación independiente, sin chat ni contexto previo."""
-    _common_pre_checks(req)
-    api_key = config.get_api_key()
+    provider = _common_pre_checks(req)
+    api_key = config.get_api_key(provider)
 
     result = llm.generate_routine(
+        provider=provider,
         api_key=api_key,
         model=req.model,
         user_input=req.user_input,
-        prompt_mode=req.prompt_mode,
-        system_prompt=req.system_prompt if req.prompt_mode == "local" else None,
-        prompt_id=req.prompt_id if req.prompt_mode == "openai_id" else None,
-        prompt_version=req.prompt_version if req.prompt_mode == "openai_id" else None,
+        system_prompt=req.system_prompt,
     )
 
     run_id, status, schema_errors = _validate_and_persist_run(
@@ -211,8 +201,8 @@ def oneshot_generate(req: OneshotGenerateRequest) -> dict[str, Any]:
 @app.post("/api/chat/generate")
 def chat_generate(req: ChatGenerateRequest) -> dict[str, Any]:
     """Generación dentro de un chat: incluye los turnos previos como contexto del LLM."""
-    _common_pre_checks(req)
-    api_key = config.get_api_key()
+    provider = _common_pre_checks(req)
+    api_key = config.get_api_key(provider)
 
     conn = db.get_conn()
     try:
@@ -236,13 +226,11 @@ def chat_generate(req: ChatGenerateRequest) -> dict[str, Any]:
         conn.close()
 
     result = llm.generate_routine(
+        provider=provider,
         api_key=api_key,
         model=req.model,
         user_input=req.user_input,
-        prompt_mode=req.prompt_mode,
-        system_prompt=req.system_prompt if req.prompt_mode == "local" else None,
-        prompt_id=req.prompt_id if req.prompt_mode == "openai_id" else None,
-        prompt_version=req.prompt_version if req.prompt_mode == "openai_id" else None,
+        system_prompt=req.system_prompt,
         prior_messages=prior_messages,
     )
 
@@ -277,7 +265,7 @@ def _run_summary(row) -> dict[str, Any]:
         "created_at": row["created_at"],
         "status": row["status"],
         "model": row["model"],
-        "prompt_mode": row["prompt_mode"],
+        "provider": row["provider"] if "provider" in row.keys() else "openai",
         "user_input": row["user_input"],
         "latency_ms": row["latency_ms"],
         "input_tokens": row["input_tokens"],
@@ -290,8 +278,6 @@ def _run_full(row) -> dict[str, Any]:
     base.update(
         {
             "system_prompt": row["system_prompt"],
-            "prompt_id": row["prompt_id"],
-            "prompt_version": row["prompt_version"],
             "schema_path": row["schema_path"],
             "raw_response": row["raw_response"],
             "parsed_json": json.loads(row["parsed_json"]) if row["parsed_json"] else None,

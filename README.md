@@ -2,13 +2,13 @@
 
 App de coaching de fitness asistida por IA. Es el caso de estudio del programa de formación en AI evals de Alaimo Labs: [AI Evals para Product managers y Testers](https://alaimolabs.com/es/eva): a lo largo del curso evaluamos este producto en sus distintas dimensiones.
 
-Esta versión es **local**: corre en tu computadora, usa tu propia API key de OpenAI y guarda la información en una base de datos local (SQLite).
+Esta versión es **local**: corre en tu computadora, usa tu propia API key (OpenAI, Anthropic y/o Google) y guarda la información en una base de datos local (SQLite).
 
 ---
 
 ## Qué necesitas antes de empezar
 
-1. **Una API key de OpenAI**. La obtienes en https://platform.openai.com/api-keys.
+1. **Al menos una API key** de alguno de los proveedores soportados: OpenAI (https://platform.openai.com/api-keys), Anthropic (https://console.anthropic.com/) y/o Google (https://aistudio.google.com/apikey). Solo puedes usar los modelos del proveedor cuya key hayas configurado.
 2. **Git** instalado para clonar el repositorio (te explicamos abajo cómo verificarlo).
 3. Tener permisos para abrir la terminal en tu computadora. No hace falta ser administrador.
 
@@ -41,10 +41,12 @@ cd routina
 cp .env.example .env
 ```
 
-Después abre el archivo `.env` con cualquier editor y pega tu API key después del `=`. El archivo tiene que quedar así:
+Después abre el archivo `.env` con cualquier editor y pega tu(s) API key(s) después del `=`. Configura solo las que vayas a usar; el archivo puede quedar así:
 
 ```
 OPENAI_API_KEY=sk-...tu-key-aquí...
+ANTHROPIC_API_KEY=sk-ant-...tu-key-aquí...
+GOOGLE_API_KEY=...tu-key-aquí...
 ```
 
 **4. Instalar las dependencias y levantar la app**:
@@ -84,10 +86,12 @@ copy .env.example .env
 notepad .env
 ```
 
-Se abre el Bloc de notas. Pega tu API key después del `=` y guarda. El archivo tiene que quedar así:
+Se abre el Bloc de notas. Pega tu(s) API key(s) después del `=` y guarda. Configura solo las que vayas a usar; el archivo puede quedar así:
 
 ```
 OPENAI_API_KEY=sk-...tu-key-aquí...
+ANTHROPIC_API_KEY=sk-ant-...tu-key-aquí...
+GOOGLE_API_KEY=...tu-key-aquí...
 ```
 
 **4. Instalar las dependencias y levantar la app**:
@@ -111,7 +115,7 @@ La app expone tres "modos" como rutas distintas, alineadas con la progresión de
 
 Adicionalmente hay **`/historial`**: la traza completa de evals — toda corrida (one-shot o chat, exitosa o fallida) queda registrada con su input, prompt, respuesta cruda, errores y mensajes de la traza.
 
-**Configuración** (botón al pie de la barra lateral): eliges el modelo, decides si editar el system prompt en local o usar uno guardado en OpenAI (con su `prompt_id`).
+**Configuración** (botón al pie de la barra lateral): eliges el modelo (agrupado por proveedor: OpenAI, Anthropic, Google) y editas el system prompt. La app rutea cada modelo al proveedor correcto según su API key.
 
 **Validación de salida**: la app valida cada respuesta del LLM en tres capas (parseo JSON, conformidad con el schema, contenido) y te muestra cada resultado por separado — útil para razonar sobre dónde falla.
 
@@ -177,7 +181,7 @@ El frontend es una SPA estática que habla con FastAPI vía estos endpoints (út
 | `GET`    | `/api/runs/{id}`        | Detalle de un run con messages, errores y respuesta cruda              |
 | `POST`   | `/api/routines`         | Body `{run_id}`. Guarda como rutina el output del run                  |
 | `GET`    | `/api/routines`         | Lista de rutinas guardadas (filtros: `objetivo`, `formato`)            |
-| `GET`    | `/api/config`           | Modelos disponibles, default, si la API key está cargada               |
+| `GET`    | `/api/config`           | Modelos disponibles (con proveedor), default, qué proveedores tienen key |
 | `GET`    | `/api/system-prompt`    | El system prompt por defecto (texto plano)                             |
 | `GET`    | `/api/schema`           | El JSON Schema activo                                                  |
 
