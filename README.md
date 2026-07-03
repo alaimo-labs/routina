@@ -47,22 +47,18 @@ Pega el siguiente texto en la Terminal y luego haz Enter:
 cp .env.example .env
 ```
 
-<<<<<<< HEAD
 Después abre el archivo `.env` con cualquier editor y pega tu(s) API key(s) después del `=`. Configura solo las que vayas a usar; el archivo puede quedar así:
 
 ```
 OPENAI_API_KEY=sk-...tu-key-aquí...
 ANTHROPIC_API_KEY=sk-ant-...tu-key-aquí...
 GOOGLE_API_KEY=...tu-key-aquí...
-=======
+```
+
 Después, pega el siguiente texto en la Terminal y haz Enter (se abrirá Finder):
 
 ```
-
 open .
-
-> > > > > > > dc5a631c609607ed1d6cc9b0cf8e6e9b7ef96a72
-
 ```
 
 Una vez en finder, haz `Command + Shift + .` (Command + Shift + Punto).
@@ -75,7 +71,8 @@ Haz click derecho al archivo `.env` y abrelo con cualquier editor (por ejemplo T
 
 OPENAI_API_KEY=sk-proj-AbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYz
 
-````
+```
+
 NOTA: El código `sk-proj-AbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYz` será diferente, porque cada quien tien el suyo propio (API Key).
 
 Guarda el archivo.
@@ -87,7 +84,7 @@ Pega el siguiente texto en la Terminal y luego haz Enter:
 ```bash
 uv sync
 uv run uvicorn server:app --port 8000
-````
+```
 
 Después abre tu navegador en `http://localhost:8000`. Listo.
 
