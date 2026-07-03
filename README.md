@@ -26,9 +26,13 @@ Abre la app **Terminal** (`Cmd + Espacio`, escribe "Terminal", Enter) y pega los
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+Luego de pegar esa línea en la Terminal, haz Enter.
+
 Cierra y vuelve a abrir la Terminal después de que termine.
 
 **2. Clonar el repositorio y entrar a la carpeta**:
+
+Pega el siguiente texto en la Terminal y luego haz Enter:
 
 ```bash
 git clone https://github.com/alaimo-labs/routina routina
@@ -37,24 +41,53 @@ cd routina
 
 **3. Configurar tu API key**:
 
+Pega el siguiente texto en la Terminal y luego haz Enter:
+
 ```bash
 cp .env.example .env
 ```
 
+<<<<<<< HEAD
 Después abre el archivo `.env` con cualquier editor y pega tu(s) API key(s) después del `=`. Configura solo las que vayas a usar; el archivo puede quedar así:
 
 ```
 OPENAI_API_KEY=sk-...tu-key-aquí...
 ANTHROPIC_API_KEY=sk-ant-...tu-key-aquí...
 GOOGLE_API_KEY=...tu-key-aquí...
+=======
+Después, pega el siguiente texto en la Terminal y haz Enter (se abrirá Finder):
+
 ```
 
+open .
+
+> > > > > > > dc5a631c609607ed1d6cc9b0cf8e6e9b7ef96a72
+
+```
+
+Una vez en finder, haz `Command + Shift + .` (Command + Shift + Punto).
+
+Verás los archivos ocultos (los que comienzan con ".").
+
+Haz click derecho al archivo `.env` y abrelo con cualquier editor (por ejemplo TextEdit) y pega el API key (que obtuviste previamente de OpenAI) después del `=`. El archivo tiene que quedar así:
+
+```
+
+OPENAI_API_KEY=sk-proj-AbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYz
+
+````
+NOTA: El código `sk-proj-AbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYz` será diferente, porque cada quien tien el suyo propio (API Key).
+
+Guarda el archivo.
+
 **4. Instalar las dependencias y levantar la app**:
+
+Pega el siguiente texto en la Terminal y luego haz Enter:
 
 ```bash
 uv sync
 uv run uvicorn server:app --port 8000
-```
+````
 
 Después abre tu navegador en `http://localhost:8000`. Listo.
 
@@ -66,6 +99,8 @@ Abre **PowerShell** (botón inicio, escribe "PowerShell", Enter).
 
 **1. Instalar `uv`**:
 
+Pega el siguiente texto y luego haz Enter:
+
 ```powershell
 irm https://astral.sh/uv/install.ps1 | iex
 ```
@@ -74,12 +109,16 @@ Cierra y vuelve a abrir PowerShell después de que termine.
 
 **2. Clonar el repositorio y entrar a la carpeta**:
 
+Pega el siguiente texto y luego haz Enter:
+
 ```powershell
 git clone https://github.com/alaimo-labs/routina routina
 cd routina
 ```
 
 **3. Configurar tu API key**:
+
+Pega el siguiente texto y luego haz Enter:
 
 ```powershell
 copy .env.example .env
@@ -95,6 +134,8 @@ GOOGLE_API_KEY=...tu-key-aquí...
 ```
 
 **4. Instalar las dependencias y levantar la app**:
+
+Pega el siguiente texto y luego haz Enter:
 
 ```powershell
 uv sync
@@ -170,20 +211,20 @@ La base de datos vive en `data/routina.db`. Si quieres inspeccionarla a mano, pu
 
 El frontend es una SPA estática que habla con FastAPI vía estos endpoints (útil si querés correr scripts de eval contra el mismo backend):
 
-| Método   | Path                    | Propósito                                                              |
-| -------- | ----------------------- | ---------------------------------------------------------------------- |
-| `POST`   | `/api/oneshot/generate` | Generación independiente, sin chat ni contexto previo                  |
-| `POST`   | `/api/chat/generate`    | Generación dentro de un chat: incluye los turnos previos como contexto |
-| `GET`    | `/api/chats?mode=chat`  | Lista de chats persistidos                                             |
-| `GET`    | `/api/chats/{id}`       | Detalle de un chat con todos sus runs                                  |
-| `DELETE` | `/api/chats/{id}`       | Borra un chat (las rutinas guardadas se mantienen)                     |
-| `GET`    | `/api/runs?status=...`  | Toda la traza de runs                                                  |
-| `GET`    | `/api/runs/{id}`        | Detalle de un run con messages, errores y respuesta cruda              |
-| `POST`   | `/api/routines`         | Body `{run_id}`. Guarda como rutina el output del run                  |
-| `GET`    | `/api/routines`         | Lista de rutinas guardadas (filtros: `objetivo`, `formato`)            |
+| Método   | Path                    | Propósito                                                                |
+| -------- | ----------------------- | ------------------------------------------------------------------------ |
+| `POST`   | `/api/oneshot/generate` | Generación independiente, sin chat ni contexto previo                    |
+| `POST`   | `/api/chat/generate`    | Generación dentro de un chat: incluye los turnos previos como contexto   |
+| `GET`    | `/api/chats?mode=chat`  | Lista de chats persistidos                                               |
+| `GET`    | `/api/chats/{id}`       | Detalle de un chat con todos sus runs                                    |
+| `DELETE` | `/api/chats/{id}`       | Borra un chat (las rutinas guardadas se mantienen)                       |
+| `GET`    | `/api/runs?status=...`  | Toda la traza de runs                                                    |
+| `GET`    | `/api/runs/{id}`        | Detalle de un run con messages, errores y respuesta cruda                |
+| `POST`   | `/api/routines`         | Body `{run_id}`. Guarda como rutina el output del run                    |
+| `GET`    | `/api/routines`         | Lista de rutinas guardadas (filtros: `objetivo`, `formato`)              |
 | `GET`    | `/api/config`           | Modelos disponibles (con proveedor), default, qué proveedores tienen key |
-| `GET`    | `/api/system-prompt`    | El system prompt por defecto (texto plano)                             |
-| `GET`    | `/api/schema`           | El JSON Schema activo                                                  |
+| `GET`    | `/api/system-prompt`    | El system prompt por defecto (texto plano)                               |
+| `GET`    | `/api/schema`           | El JSON Schema activo                                                    |
 
 ---
 
