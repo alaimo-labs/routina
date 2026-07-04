@@ -13,6 +13,7 @@ dependencies = [
     "google-genai>=1.0",
     "jsonschema>=4.23,<5",
     "python-dotenv>=1.0,<2",
+    "verica-observability>=0.1.4",
 ]
 
 [tool.uv]

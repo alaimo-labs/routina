@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -12,9 +13,24 @@ from pydantic import BaseModel, Field
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from routina import config, db, llm, validate  # noqa: E402
+# `config` no importa los SDKs de LLM, así que es seguro cargarlo y leer el .env antes
+# de inicializar verica.
+from routina import config  # noqa: E402
 
 config.load_env()
+
+# Observabilidad (opcional, fail-open): verica.init() debe correr ANTES de importar
+# `routina.llm` porque parchea los SDKs (openai/anthropic/google-genai) al importarse.
+# Sin VERICA_TOKEN no se inicializa nada y la app corre igual, sin trazas.
+import verica  # noqa: E402
+
+_verica_on = False
+if os.environ.get("VERICA_TOKEN"):
+    _verica_on = verica.init(service_name="routina")
+
+# Recién ahora importamos llm/db/validate; los SDKs de LLM se importan ya parcheados.
+from routina import db, llm, validate  # noqa: E402
+
 STATIC_DIR = ROOT / "static"
 
 
@@ -26,6 +42,9 @@ async def lifespan(app: FastAPI):
     finally:
         conn.close()
     yield
+    if _verica_on:
+        # Exporta el batch de spans pendiente antes de frenar el server.
+        verica.shutdown()
 
 
 app = FastAPI(title="Routina", lifespan=lifespan)
