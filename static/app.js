@@ -35,6 +35,7 @@ const ICONS = {
     moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
     info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
     'chevrons-up-down': '<path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/>',
+    user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
 };
 
 function icon(name, size = 16) {
@@ -198,6 +199,23 @@ const api = {
         if (!r.ok) {
             const data = await r.json().catch(() => ({}));
             throw new Error(data.detail || 'No pude borrar el chat');
+        }
+        return r.json();
+    },
+    async getProfile() {
+        const r = await fetch('/api/profile');
+        if (!r.ok) throw new Error('No pude leer el perfil');
+        return r.json();
+    },
+    async updateProfile(body) {
+        const r = await fetch('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        if (!r.ok) {
+            const data = await r.json().catch(() => ({}));
+            throw new Error(data.detail || 'No pude guardar el perfil');
         }
         return r.json();
     },
@@ -1177,6 +1195,75 @@ function savePromptModal() {
     showToast('System prompt guardado');
 }
 
+// -------------------- Modal perfil del usuario --------------------
+// Igual que el editor de prompts: los checkboxes son un borrador que se persiste
+// (vía PUT /api/profile) recién al apretar Guardar.
+let profileSnapshot = null;   // JSON del perfil cargado, para detectar cambios sin guardar
+
+function renderCheckGrid(containerId, options, checkedIds) {
+    const checked = new Set(checkedIds);
+    document.getElementById(containerId).innerHTML = options.map(o => `
+        <label class="check-item">
+            <input type="checkbox" value="${escapeHtml(o.id)}" ${checked.has(o.id) ? 'checked' : ''}>
+            <span>${escapeHtml(o.label)}</span>
+        </label>
+    `).join('');
+}
+
+function collectProfileDraft() {
+    const collect = (id) => Array.from(
+        document.querySelectorAll(`#${id} input:checked`)
+    ).map(i => i.value);
+    return {
+        equipamiento: collect('profile-equipamiento'),
+        lesiones: collect('profile-lesiones'),
+        notas: document.getElementById('profile-notas').value.trim(),
+    };
+}
+
+async function openProfileModal() {
+    let data;
+    try {
+        data = await api.getProfile();
+    } catch (e) {
+        showToast(e.message);
+        return;
+    }
+    renderCheckGrid('profile-equipamiento', data.vocab.equipamiento, data.profile.equipamiento);
+    renderCheckGrid('profile-lesiones', data.vocab.lesiones, data.profile.lesiones);
+    document.getElementById('profile-notas').value = data.profile.notas || '';
+    document.getElementById('profile-modal').hidden = false;
+    profileSnapshot = JSON.stringify(collectProfileDraft());
+}
+
+function hideProfileModal() {
+    profileSnapshot = null;
+    document.getElementById('profile-modal').hidden = true;
+}
+
+async function cancelProfileModal() {
+    if (profileSnapshot !== null && JSON.stringify(collectProfileDraft()) !== profileSnapshot) {
+        const ok = await confirmDialog({
+            title: 'Descartar cambios',
+            message: 'Hay cambios sin guardar en tu perfil. ¿Quieres descartarlos?',
+            okLabel: 'Descartar',
+            cancelLabel: 'Seguir editando',
+        });
+        if (!ok) return;
+    }
+    hideProfileModal();
+}
+
+async function saveProfileModal() {
+    try {
+        await api.updateProfile(collectProfileDraft());
+        hideProfileModal();
+        showToast('Perfil guardado');
+    } catch (e) {
+        showToast('No pude guardar: ' + e.message);
+    }
+}
+
 async function restorePromptDefault() {
     const mode = state.promptModalMode;
     const meta = PROMPT_MODE_META[mode];
@@ -1227,6 +1314,7 @@ function bindEvents() {
     document.querySelector('.sidebar').addEventListener('click', (ev) => {
         if (ev.target.closest('#collapse-sidebar')) { toggleSidebar(); return; }
         if (ev.target.closest('#new-chat-btn')) { newChat(); return; }
+        if (ev.target.closest('#open-profile')) { openProfileModal(); return; }
         if (ev.target.closest('#open-settings')) { openDrawer(); return; }
         const delBtn = ev.target.closest('[data-delete-chat]');
         if (delBtn) {
@@ -1258,6 +1346,16 @@ function bindEvents() {
         state.settings.model = ev.target.value;
         saveSettings();
         refreshApiKeyStatus();
+    });
+
+    // Modal perfil del usuario
+    document.getElementById('profile-modal').addEventListener('click', (ev) => {
+        if (ev.target.matches('[data-close-profile]') || ev.target.closest('[data-close-profile]')
+            || ev.target.closest('#profile-cancel')) {
+            cancelProfileModal();
+        } else if (ev.target.closest('#profile-save')) {
+            saveProfileModal();
+        }
     });
 
     // Modal editor de system prompt
@@ -1386,6 +1484,7 @@ function bindEvents() {
     document.addEventListener('keydown', (ev) => {
         if (ev.key === 'Escape') {
             if (!document.getElementById('prompt-modal').hidden) cancelPromptModal();
+            else if (!document.getElementById('profile-modal').hidden) cancelProfileModal();
             else if (!document.getElementById('about-modal').hidden) closeAboutModal();
             else if (!document.getElementById('oneshot-modal').hidden) closeOneshotModal();
             else if (!document.getElementById('modal').hidden) closeModal();

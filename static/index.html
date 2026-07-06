@@ -58,6 +58,10 @@
                     <span data-icon="history"></span>
                     <span>Historial</span>
                 </a>
+                <button class="settings-btn" id="open-profile" type="button">
+                    <span data-icon="user"></span>
+                    <span>Perfil</span>
+                </button>
                 <button class="settings-btn" id="open-settings" type="button">
                     <span data-icon="settings"></span>
                     <span>Configuración</span>
@@ -240,6 +244,32 @@
                         <button class="btn btn-danger" id="reset-all-btn" type="button">Borrar todo</button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ========================== Modal perfil del usuario ========================== -->
+        <div class="modal" id="profile-modal" hidden>
+            <div class="modal-overlay" data-close-profile></div>
+            <div class="modal-panel modal-panel--profile">
+                <header class="modal-header">
+                    <h3>Tu perfil</h3>
+                    <button class="icon-btn" data-close-profile type="button" aria-label="Cerrar">
+                        <span data-icon="x"></span>
+                    </button>
+                </header>
+                <div class="modal-body">
+                    <p class="profile-help">Tu agente consulta este perfil cuando arma rutinas en el modo Agente: marca el equipamiento que tienes y las zonas con lesiones o molestias.</p>
+                    <div class="field-label">Equipamiento disponible</div>
+                    <div class="check-grid" id="profile-equipamiento"></div>
+                    <div class="field-label">Lesiones o molestias</div>
+                    <div class="check-grid" id="profile-lesiones"></div>
+                    <label class="field-label" for="profile-notas">Notas para tu agente</label>
+                    <textarea id="profile-notas" class="textarea-input profile-notas" rows="3" placeholder="Ej. La rodilla solo molesta al saltar; prefiero entrenar de mañana."></textarea>
+                </div>
+                <footer class="prompt-modal-footer">
+                    <button class="btn btn-outline" id="profile-cancel" type="button">Cancelar</button>
+                    <button class="btn btn-primary" id="profile-save" type="button">Guardar</button>
+                </footer>
             </div>
         </div>
 

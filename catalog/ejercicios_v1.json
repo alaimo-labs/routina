@@ -1,0 +1,635 @@
+{
+  "version": 1,
+  "equipamiento": [
+    { "id": "colchoneta", "label": "Colchoneta" },
+    { "id": "mancuernas", "label": "Mancuernas" },
+    { "id": "barra", "label": "Barra y discos" },
+    { "id": "banco", "label": "Banco" },
+    { "id": "bandas", "label": "Bandas elásticas" },
+    { "id": "kettlebell", "label": "Kettlebell" },
+    { "id": "barra_dominadas", "label": "Barra de dominadas" },
+    { "id": "maquinas", "label": "Máquinas de gimnasio" },
+    { "id": "bicicleta", "label": "Bicicleta fija" },
+    { "id": "cinta", "label": "Cinta de correr" },
+    { "id": "soga", "label": "Soga de saltar" }
+  ],
+  "lesiones": [
+    { "id": "rodilla", "label": "Rodilla" },
+    { "id": "tobillo", "label": "Tobillo" },
+    { "id": "cadera", "label": "Cadera" },
+    { "id": "lumbar", "label": "Zona lumbar" },
+    { "id": "cervical", "label": "Cuello / cervicales" },
+    { "id": "hombro", "label": "Hombro" },
+    { "id": "codo", "label": "Codo" },
+    { "id": "muneca", "label": "Muñeca" }
+  ],
+  "grupos_musculares": [
+    { "id": "piernas", "label": "Piernas" },
+    { "id": "gluteos", "label": "Glúteos" },
+    { "id": "pecho", "label": "Pecho" },
+    { "id": "espalda", "label": "Espalda" },
+    { "id": "hombros", "label": "Hombros" },
+    { "id": "biceps", "label": "Bíceps" },
+    { "id": "triceps", "label": "Tríceps" },
+    { "id": "core", "label": "Core" },
+    { "id": "cardio", "label": "Cardio" },
+    { "id": "movilidad", "label": "Movilidad" }
+  ],
+  "niveles": ["principiante", "intermedio", "avanzado"],
+  "ejercicios": [
+    {
+      "id": "sentadilla_peso_corporal",
+      "nombre": "Sentadilla con peso corporal",
+      "grupos": ["piernas", "gluteos"],
+      "equipamiento": [],
+      "nivel": "principiante",
+      "contraindicado_para": ["rodilla"],
+      "notas": "Pies al ancho de hombros, baja hasta donde la técnica lo permita sin despegar talones."
+    },
+    {
+      "id": "sentadilla_goblet",
+      "nombre": "Sentadilla goblet",
+      "grupos": ["piernas", "gluteos"],
+      "equipamiento": ["mancuernas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["rodilla"],
+      "notas": "Sostiene la mancuerna contra el pecho; ayuda a mantener el torso erguido."
+    },
+    {
+      "id": "sentadilla_barra",
+      "nombre": "Sentadilla con barra",
+      "grupos": ["piernas", "gluteos"],
+      "equipamiento": ["barra"],
+      "nivel": "avanzado",
+      "contraindicado_para": ["rodilla", "lumbar"],
+      "notas": "Requiere buena movilidad de cadera y tobillo. Aprende la técnica sin peso primero."
+    },
+    {
+      "id": "zancadas",
+      "nombre": "Zancadas",
+      "grupos": ["piernas", "gluteos"],
+      "equipamiento": [],
+      "nivel": "principiante",
+      "contraindicado_para": ["rodilla"],
+      "notas": "Paso largo, rodilla trasera hacia el piso sin tocarlo. Alterna piernas."
+    },
+    {
+      "id": "zancadas_mancuernas",
+      "nombre": "Zancadas con mancuernas",
+      "grupos": ["piernas", "gluteos"],
+      "equipamiento": ["mancuernas"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["rodilla"],
+      "notas": "Mancuernas a los costados, torso erguido durante todo el recorrido."
+    },
+    {
+      "id": "sentadilla_bulgara",
+      "nombre": "Sentadilla búlgara",
+      "grupos": ["piernas", "gluteos"],
+      "equipamiento": ["banco"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["rodilla"],
+      "notas": "Pie trasero apoyado en el banco. Exige equilibrio; empieza sin peso."
+    },
+    {
+      "id": "sentadilla_salto",
+      "nombre": "Sentadilla con salto",
+      "grupos": ["piernas", "cardio"],
+      "equipamiento": [],
+      "nivel": "intermedio",
+      "contraindicado_para": ["rodilla", "tobillo"],
+      "notas": "Aterriza suave con rodillas flexionadas. Alto impacto."
+    },
+    {
+      "id": "peso_muerto_rumano_mancuernas",
+      "nombre": "Peso muerto rumano con mancuernas",
+      "grupos": ["piernas", "gluteos"],
+      "equipamiento": ["mancuernas"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["lumbar"],
+      "notas": "Bisagra de cadera con espalda neutra; las mancuernas bajan pegadas a las piernas."
+    },
+    {
+      "id": "peso_muerto_barra",
+      "nombre": "Peso muerto con barra",
+      "grupos": ["piernas", "gluteos", "espalda"],
+      "equipamiento": ["barra"],
+      "nivel": "avanzado",
+      "contraindicado_para": ["lumbar"],
+      "notas": "Técnica exigente: espalda neutra y barra pegada al cuerpo. Progresión gradual."
+    },
+    {
+      "id": "puente_gluteos",
+      "nombre": "Puente de glúteos",
+      "grupos": ["gluteos", "core"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Aprieta glúteos arriba un segundo. Apto para casi cualquier condición."
+    },
+    {
+      "id": "hip_thrust_barra",
+      "nombre": "Hip thrust con barra",
+      "grupos": ["gluteos"],
+      "equipamiento": ["barra", "banco"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["cadera"],
+      "notas": "Espalda alta apoyada en el banco, barra sobre la cadera. Extensión completa arriba."
+    },
+    {
+      "id": "prensa_piernas",
+      "nombre": "Prensa de piernas",
+      "grupos": ["piernas", "gluteos"],
+      "equipamiento": ["maquinas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["rodilla"],
+      "notas": "No bloquees las rodillas al extender. Rango controlado."
+    },
+    {
+      "id": "extension_cuadriceps",
+      "nombre": "Extensión de cuádriceps en máquina",
+      "grupos": ["piernas"],
+      "equipamiento": ["maquinas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["rodilla"],
+      "notas": "Movimiento aislado; sube controlado y baja lento."
+    },
+    {
+      "id": "curl_femoral",
+      "nombre": "Curl femoral en máquina",
+      "grupos": ["piernas"],
+      "equipamiento": ["maquinas"],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Aísla isquiotibiales. Evita arquear la zona lumbar."
+    },
+    {
+      "id": "elevacion_talones",
+      "nombre": "Elevación de talones",
+      "grupos": ["piernas"],
+      "equipamiento": [],
+      "nivel": "principiante",
+      "contraindicado_para": ["tobillo"],
+      "notas": "De pie, sube a puntas de pie con pausa arriba. Puede hacerse en escalón."
+    },
+    {
+      "id": "step_up",
+      "nombre": "Subida al banco (step up)",
+      "grupos": ["piernas", "gluteos"],
+      "equipamiento": ["banco"],
+      "nivel": "principiante",
+      "contraindicado_para": ["rodilla"],
+      "notas": "Empuja con la pierna de arriba, no con impulso de la de abajo."
+    },
+    {
+      "id": "flexiones",
+      "nombre": "Flexiones de brazos",
+      "grupos": ["pecho", "triceps", "core"],
+      "equipamiento": [],
+      "nivel": "intermedio",
+      "contraindicado_para": ["muneca", "hombro"],
+      "notas": "Cuerpo alineado de cabeza a talones. Codos a unos 45° del torso."
+    },
+    {
+      "id": "flexiones_rodillas",
+      "nombre": "Flexiones con rodillas apoyadas",
+      "grupos": ["pecho", "triceps"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "principiante",
+      "contraindicado_para": ["muneca"],
+      "notas": "Variante accesible de la flexión; mantiene cadera alineada."
+    },
+    {
+      "id": "flexiones_inclinadas",
+      "nombre": "Flexiones inclinadas (manos elevadas)",
+      "grupos": ["pecho", "triceps"],
+      "equipamiento": [],
+      "nivel": "principiante",
+      "contraindicado_para": ["muneca"],
+      "notas": "Manos sobre banco, mesa o pared. Cuanto más alto el apoyo, más fácil."
+    },
+    {
+      "id": "press_banca_mancuernas",
+      "nombre": "Press de banca con mancuernas",
+      "grupos": ["pecho", "triceps"],
+      "equipamiento": ["mancuernas", "banco"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["hombro"],
+      "notas": "Baja controlado hasta la altura del pecho; mayor rango que con barra."
+    },
+    {
+      "id": "press_banca_barra",
+      "nombre": "Press de banca con barra",
+      "grupos": ["pecho", "triceps"],
+      "equipamiento": ["barra", "banco"],
+      "nivel": "avanzado",
+      "contraindicado_para": ["hombro"],
+      "notas": "Idealmente con ayuda para sacar y devolver la barra en series pesadas."
+    },
+    {
+      "id": "aperturas_mancuernas",
+      "nombre": "Aperturas con mancuernas",
+      "grupos": ["pecho"],
+      "equipamiento": ["mancuernas", "banco"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["hombro"],
+      "notas": "Codos levemente flexionados; no bajes más allá de la línea del torso."
+    },
+    {
+      "id": "press_pecho_maquina",
+      "nombre": "Press de pecho en máquina",
+      "grupos": ["pecho", "triceps"],
+      "equipamiento": ["maquinas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["hombro"],
+      "notas": "Trayectoria guiada; buena opción para aprender el patrón de empuje."
+    },
+    {
+      "id": "fondos_banco",
+      "nombre": "Fondos en banco",
+      "grupos": ["triceps", "pecho"],
+      "equipamiento": ["banco"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["hombro", "muneca"],
+      "notas": "Baja solo hasta donde el hombro no moleste. Codos apuntando atrás."
+    },
+    {
+      "id": "remo_mancuerna",
+      "nombre": "Remo con mancuerna a un brazo",
+      "grupos": ["espalda", "biceps"],
+      "equipamiento": ["mancuernas", "banco"],
+      "nivel": "principiante",
+      "contraindicado_para": ["lumbar"],
+      "notas": "Rodilla y mano apoyadas en el banco; espalda neutra, lleva el codo hacia atrás."
+    },
+    {
+      "id": "remo_barra",
+      "nombre": "Remo con barra",
+      "grupos": ["espalda", "biceps"],
+      "equipamiento": ["barra"],
+      "nivel": "avanzado",
+      "contraindicado_para": ["lumbar"],
+      "notas": "Torso inclinado con espalda neutra; exige control lumbar constante."
+    },
+    {
+      "id": "remo_bandas",
+      "nombre": "Remo con bandas",
+      "grupos": ["espalda", "biceps"],
+      "equipamiento": ["bandas"],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Sentado con la banda en los pies o anclada. Aprieta omóplatos al final."
+    },
+    {
+      "id": "dominadas",
+      "nombre": "Dominadas",
+      "grupos": ["espalda", "biceps"],
+      "equipamiento": ["barra_dominadas"],
+      "nivel": "avanzado",
+      "contraindicado_para": ["hombro", "codo"],
+      "notas": "Rango completo: brazos extendidos abajo, mentón sobre la barra arriba."
+    },
+    {
+      "id": "dominadas_asistidas",
+      "nombre": "Dominadas asistidas con banda",
+      "grupos": ["espalda", "biceps"],
+      "equipamiento": ["barra_dominadas", "bandas"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["hombro"],
+      "notas": "La banda en los pies o rodillas descuenta peso. Progresión hacia la dominada completa."
+    },
+    {
+      "id": "jalon_al_pecho",
+      "nombre": "Jalón al pecho",
+      "grupos": ["espalda", "biceps"],
+      "equipamiento": ["maquinas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["hombro"],
+      "notas": "Lleva la barra al pecho, no detrás de la nuca. Torso apenas inclinado atrás."
+    },
+    {
+      "id": "remo_sentado_maquina",
+      "nombre": "Remo sentado en máquina",
+      "grupos": ["espalda", "biceps"],
+      "equipamiento": ["maquinas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["lumbar"],
+      "notas": "Pecho apoyado o torso estable; evita balancearte para mover más peso."
+    },
+    {
+      "id": "superman",
+      "nombre": "Superman",
+      "grupos": ["espalda", "core"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "principiante",
+      "contraindicado_para": ["lumbar"],
+      "notas": "Boca abajo, eleva brazos y piernas unos centímetros con pausa breve."
+    },
+    {
+      "id": "face_pull_bandas",
+      "nombre": "Face pull con banda",
+      "grupos": ["hombros", "espalda"],
+      "equipamiento": ["bandas"],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Tira de la banda hacia la cara con codos altos. Excelente para postura y hombro sano."
+    },
+    {
+      "id": "press_militar_mancuernas",
+      "nombre": "Press militar con mancuernas",
+      "grupos": ["hombros", "triceps"],
+      "equipamiento": ["mancuernas"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["hombro", "cervical"],
+      "notas": "De pie o sentado, empuja vertical sin arquear la zona lumbar."
+    },
+    {
+      "id": "press_militar_barra",
+      "nombre": "Press militar con barra",
+      "grupos": ["hombros", "triceps"],
+      "equipamiento": ["barra"],
+      "nivel": "avanzado",
+      "contraindicado_para": ["hombro", "cervical", "lumbar"],
+      "notas": "Core firme para proteger la zona lumbar; la barra pasa cerca de la cara."
+    },
+    {
+      "id": "elevaciones_laterales",
+      "nombre": "Elevaciones laterales",
+      "grupos": ["hombros"],
+      "equipamiento": ["mancuernas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["hombro"],
+      "notas": "Peso liviano, sube hasta la altura de hombros con codos apenas flexionados."
+    },
+    {
+      "id": "pajaros",
+      "nombre": "Pájaros (elevaciones posteriores)",
+      "grupos": ["hombros", "espalda"],
+      "equipamiento": ["mancuernas"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["hombro"],
+      "notas": "Torso inclinado, abre los brazos hacia los costados apretando omóplatos."
+    },
+    {
+      "id": "press_hombros_bandas",
+      "nombre": "Press de hombros con bandas",
+      "grupos": ["hombros", "triceps"],
+      "equipamiento": ["bandas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["hombro"],
+      "notas": "Pisa la banda y empuja vertical. Resistencia progresiva y amable con la articulación."
+    },
+    {
+      "id": "curl_biceps_mancuernas",
+      "nombre": "Curl de bíceps con mancuernas",
+      "grupos": ["biceps"],
+      "equipamiento": ["mancuernas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["codo"],
+      "notas": "Codos pegados al torso; evita balancear el cuerpo."
+    },
+    {
+      "id": "curl_biceps_bandas",
+      "nombre": "Curl de bíceps con bandas",
+      "grupos": ["biceps"],
+      "equipamiento": ["bandas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["codo"],
+      "notas": "Pisa la banda y flexiona; la tensión crece al final del recorrido."
+    },
+    {
+      "id": "curl_martillo",
+      "nombre": "Curl martillo",
+      "grupos": ["biceps"],
+      "equipamiento": ["mancuernas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["codo", "muneca"],
+      "notas": "Agarre neutro (palmas enfrentadas); más amable con la muñeca que el curl clásico."
+    },
+    {
+      "id": "extension_triceps_bandas",
+      "nombre": "Extensión de tríceps con banda",
+      "grupos": ["triceps"],
+      "equipamiento": ["bandas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["codo"],
+      "notas": "Banda anclada arriba; extiende los codos manteniéndolos fijos al costado."
+    },
+    {
+      "id": "extension_triceps_mancuerna",
+      "nombre": "Extensión de tríceps trasnuca",
+      "grupos": ["triceps"],
+      "equipamiento": ["mancuernas"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["codo", "hombro"],
+      "notas": "Una mancuerna a dos manos por detrás de la cabeza; codos apuntando al techo."
+    },
+    {
+      "id": "plancha",
+      "nombre": "Plancha",
+      "grupos": ["core"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "principiante",
+      "contraindicado_para": ["hombro"],
+      "notas": "Apoyo en antebrazos, cuerpo en línea recta. Prioriza postura sobre duración."
+    },
+    {
+      "id": "plancha_lateral",
+      "nombre": "Plancha lateral",
+      "grupos": ["core"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["hombro"],
+      "notas": "Cadera alta y alineada. Trabaja oblicuos; alterna lados."
+    },
+    {
+      "id": "crunch",
+      "nombre": "Crunch abdominal",
+      "grupos": ["core"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "principiante",
+      "contraindicado_para": ["cervical", "lumbar"],
+      "notas": "Despega solo la parte alta de la espalda; no tires del cuello con las manos."
+    },
+    {
+      "id": "elevacion_piernas",
+      "nombre": "Elevación de piernas",
+      "grupos": ["core"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["lumbar"],
+      "notas": "Zona lumbar apoyada en el piso durante todo el movimiento; flexiona rodillas si hace falta."
+    },
+    {
+      "id": "dead_bug",
+      "nombre": "Dead bug",
+      "grupos": ["core"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Extiende brazo y pierna opuestos manteniendo la lumbar pegada al piso. Muy seguro."
+    },
+    {
+      "id": "bird_dog",
+      "nombre": "Bird dog",
+      "grupos": ["core", "espalda"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "En cuadrupedia, extiende brazo y pierna opuestos. Lento y estable."
+    },
+    {
+      "id": "mountain_climbers",
+      "nombre": "Mountain climbers",
+      "grupos": ["core", "cardio"],
+      "equipamiento": [],
+      "nivel": "intermedio",
+      "contraindicado_para": ["muneca", "rodilla"],
+      "notas": "Posición de plancha alta llevando rodillas al pecho en forma alternada."
+    },
+    {
+      "id": "russian_twist",
+      "nombre": "Giro ruso",
+      "grupos": ["core"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["lumbar"],
+      "notas": "Sentado con torso inclinado atrás, gira el tronco de lado a lado con control."
+    },
+    {
+      "id": "hollow_hold",
+      "nombre": "Hollow hold",
+      "grupos": ["core"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "avanzado",
+      "contraindicado_para": ["lumbar", "cervical"],
+      "notas": "Cuerpo en forma de banana con lumbar pegada al piso. Isométrico exigente."
+    },
+    {
+      "id": "burpees",
+      "nombre": "Burpees",
+      "grupos": ["cardio", "piernas", "pecho"],
+      "equipamiento": [],
+      "nivel": "intermedio",
+      "contraindicado_para": ["rodilla", "muneca", "lumbar"],
+      "notas": "Movimiento completo de alta intensidad. Versión sin salto para bajar impacto."
+    },
+    {
+      "id": "jumping_jacks",
+      "nombre": "Jumping jacks",
+      "grupos": ["cardio"],
+      "equipamiento": [],
+      "nivel": "principiante",
+      "contraindicado_para": ["rodilla", "tobillo"],
+      "notas": "Clásico de entrada en calor. Versión sin salto: alternar toques laterales."
+    },
+    {
+      "id": "salto_soga",
+      "nombre": "Salto a la soga",
+      "grupos": ["cardio"],
+      "equipamiento": ["soga"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["rodilla", "tobillo"],
+      "notas": "Saltos bajos y continuos sobre puntas de pie. Gran gasto calórico por minuto."
+    },
+    {
+      "id": "bicicleta_fija",
+      "nombre": "Bicicleta fija",
+      "grupos": ["cardio"],
+      "equipamiento": ["bicicleta"],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Cardio de bajo impacto, apto con molestias de rodilla leves si el rango no duele."
+    },
+    {
+      "id": "caminata_cinta",
+      "nombre": "Caminata en cinta",
+      "grupos": ["cardio"],
+      "equipamiento": ["cinta"],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Ajusta inclinación para subir intensidad sin impacto de carrera."
+    },
+    {
+      "id": "correr_cinta",
+      "nombre": "Carrera en cinta",
+      "grupos": ["cardio"],
+      "equipamiento": ["cinta"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["rodilla", "tobillo"],
+      "notas": "Progresa volumen de a poco (regla del ~10% semanal) para evitar sobrecargas."
+    },
+    {
+      "id": "sprints",
+      "nombre": "Sprints",
+      "grupos": ["cardio", "piernas"],
+      "equipamiento": [],
+      "nivel": "avanzado",
+      "contraindicado_para": ["rodilla", "tobillo", "cadera"],
+      "notas": "Máxima intensidad con pausas amplias. Entrada en calor obligatoria."
+    },
+    {
+      "id": "kettlebell_swing",
+      "nombre": "Swing con kettlebell",
+      "grupos": ["gluteos", "cardio", "espalda"],
+      "equipamiento": ["kettlebell"],
+      "nivel": "intermedio",
+      "contraindicado_para": ["lumbar"],
+      "notas": "El impulso nace de la cadera (bisagra), no de los brazos ni de la zona lumbar."
+    },
+    {
+      "id": "remo_ergometro",
+      "nombre": "Remo en ergómetro",
+      "grupos": ["cardio", "espalda"],
+      "equipamiento": ["maquinas"],
+      "nivel": "principiante",
+      "contraindicado_para": ["lumbar"],
+      "notas": "Secuencia piernas-torso-brazos. Cardio de bajo impacto de cuerpo completo."
+    },
+    {
+      "id": "gato_camello",
+      "nombre": "Gato-camello",
+      "grupos": ["movilidad", "espalda"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Alterna flexión y extensión suave de columna en cuadrupedia. Ideal para calentar."
+    },
+    {
+      "id": "estiramiento_isquios",
+      "nombre": "Estiramiento de isquiotibiales",
+      "grupos": ["movilidad"],
+      "equipamiento": ["colchoneta"],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Sostén 20-30 segundos sin rebotes, con la espalda lo más neutra posible."
+    },
+    {
+      "id": "rotaciones_cadera",
+      "nombre": "Rotaciones de cadera",
+      "grupos": ["movilidad"],
+      "equipamiento": [],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Círculos amplios y controlados de cadera, de pie o en cuadrupedia."
+    },
+    {
+      "id": "sentadilla_profunda_sostenida",
+      "nombre": "Sentadilla profunda sostenida",
+      "grupos": ["movilidad", "piernas"],
+      "equipamiento": [],
+      "nivel": "intermedio",
+      "contraindicado_para": ["rodilla", "tobillo"],
+      "notas": "Mantén la posición baja 20-40 segundos usando talones como apoyo firme."
+    },
+    {
+      "id": "apertura_pecho_pared",
+      "nombre": "Apertura de pecho en pared",
+      "grupos": ["movilidad", "hombros"],
+      "equipamiento": [],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Antebrazo apoyado en la pared, gira el torso alejándote. Estira pectoral y hombro."
+    }
+  ]
+}

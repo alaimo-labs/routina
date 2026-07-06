@@ -153,6 +153,8 @@ La app expone tres "modos" como rutas distintas, alineadas con la progresión de
 
 Adicionalmente hay **`/historial`**: la traza completa de evals — toda corrida (one-shot o chat, exitosa o fallida) queda registrada con su input, prompt, respuesta cruda, errores y mensajes de la traza.
 
+**Perfil** (botón al pie de la barra lateral): marcas con checkboxes tu equipamiento disponible y tus lesiones o molestias, más notas libres. El agente lo consulta al armar rutinas en el modo Agente (es la base de sus tools).
+
 **Configuración** (botón al pie de la barra lateral): eliges el modelo (agrupado por proveedor: OpenAI, Anthropic, Google) y editas los system prompts — hay uno por modo: one-shot y chat, cada uno se abre en un editor a pantalla casi completa con su botón para restaurar el default. La app rutea cada modelo al proveedor correcto según su API key.
 
 **Validación de salida**: la app valida cada respuesta del LLM en tres capas (parseo JSON, conformidad con el schema, contenido) y te muestra cada resultado por separado — útil para razonar sobre dónde falla.
@@ -194,7 +196,10 @@ routina/
 │   ├── config.py               # Rutas y carga de .env
 │   ├── db.py                   # SQLite: chats, runs, routines
 │   ├── llm.py                  # Capa multi-proveedor (OpenAI, Anthropic, Google)
+│   ├── catalog.py              # Búsqueda sobre el catálogo de ejercicios
 │   └── validate.py             # Validación contra el JSON Schema
+├── catalog/
+│   └── ejercicios_v1.json      # Catálogo de ejercicios con vocabulario cerrado
 ├── prompts/
 │   ├── routina_oneshot.txt     # System prompt por defecto del modo one-shot
 │   └── routina_chat.txt        # System prompt por defecto del modo chat
@@ -221,6 +226,9 @@ El frontend es una SPA estática que habla con FastAPI vía estos endpoints (út
 | `GET`    | `/api/runs/{id}`        | Detalle de un run con messages, errores y respuesta cruda                |
 | `POST`   | `/api/routines`         | Body `{run_id}`. Guarda como rutina el output del run                    |
 | `GET`    | `/api/routines`         | Lista de rutinas guardadas (filtros: `objetivo`, `formato`)              |
+| `GET`    | `/api/profile`          | Perfil del usuario (equipamiento, lesiones, notas) + vocabulario         |
+| `PUT`    | `/api/profile`          | Guarda el perfil (valida los IDs contra el vocabulario del catálogo)     |
+| `GET`    | `/api/catalog`          | Catálogo de ejercicios; filtros: `grupo`, `nivel`, `equipamiento`, `evitar_lesiones` |
 | `GET`    | `/api/config`           | Modelos disponibles (con proveedor), default, qué proveedores tienen key |
 | `GET`    | `/api/system-prompt`    | Los system prompts por defecto, uno por modo (`{oneshot, chat}`)         |
 | `GET`    | `/api/schema?mode=...`  | El JSON Schema del modo (`oneshot` o `chat`; default `oneshot`)          |

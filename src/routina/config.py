@@ -8,6 +8,7 @@ DATA_DIR = ROOT / "data"
 DB_PATH = DATA_DIR / "routina.db"
 PROMPTS_DIR = ROOT / "prompts"
 SCHEMAS_DIR = ROOT / "schemas"
+CATALOG_PATH = ROOT / "catalog" / "ejercicios_v1.json"
 # Cada modo de interacción tiene su propio system prompt y su propio schema de
 # respuesta. Cuando exista el modo agéntico, se suma acá como "agent".
 MODES = ("oneshot", "chat")

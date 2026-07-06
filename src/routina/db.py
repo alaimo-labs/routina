@@ -51,6 +51,14 @@ CREATE TABLE IF NOT EXISTS routines (
   payload_json    TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS profile (
+  id                INTEGER PRIMARY KEY CHECK (id = 1),
+  equipamiento_json TEXT NOT NULL DEFAULT '[]',
+  lesiones_json     TEXT NOT NULL DEFAULT '[]',
+  notas             TEXT NOT NULL DEFAULT '',
+  updated_at        TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_runs_created_at ON runs(created_at);
 CREATE INDEX IF NOT EXISTS idx_chats_updated   ON chats(updated_at);
 CREATE INDEX IF NOT EXISTS idx_routines_created_at ON routines(created_at);
@@ -294,6 +302,48 @@ def get_routine(conn: sqlite3.Connection, routine_id: int) -> sqlite3.Row | None
 
 def delete_routine(conn: sqlite3.Connection, routine_id: int) -> None:
     conn.execute("DELETE FROM routines WHERE id = ?", (routine_id,))
+    conn.commit()
+
+
+# ----- Perfil del usuario -----
+# Una sola fila (id=1): la app es single-user local. El agente lo consulta vía tool.
+
+def get_profile(conn: sqlite3.Connection) -> dict[str, Any]:
+    row = conn.execute("SELECT * FROM profile WHERE id = 1").fetchone()
+    if row is None:
+        return {"equipamiento": [], "lesiones": [], "notas": "", "updated_at": None}
+    return {
+        "equipamiento": json.loads(row["equipamiento_json"]),
+        "lesiones": json.loads(row["lesiones_json"]),
+        "notas": row["notas"],
+        "updated_at": row["updated_at"],
+    }
+
+
+def save_profile(
+    conn: sqlite3.Connection,
+    *,
+    equipamiento: list[str],
+    lesiones: list[str],
+    notas: str,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO profile (id, equipamiento_json, lesiones_json, notas, updated_at)
+        VALUES (1, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            equipamiento_json = excluded.equipamiento_json,
+            lesiones_json     = excluded.lesiones_json,
+            notas             = excluded.notas,
+            updated_at        = excluded.updated_at
+        """,
+        (
+            json.dumps(equipamiento, ensure_ascii=False),
+            json.dumps(lesiones, ensure_ascii=False),
+            notas,
+            _now_iso(),
+        ),
+    )
     conn.commit()
 
 

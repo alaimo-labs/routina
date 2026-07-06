@@ -29,7 +29,7 @@ if os.environ.get("VERICA_TOKEN"):
     _verica_on = verica.init(service_name="routina")
 
 # Recién ahora importamos llm/db/validate; los SDKs de LLM se importan ya parcheados.
-from routina import db, llm, validate  # noqa: E402
+from routina import catalog, db, llm, validate  # noqa: E402
 
 STATIC_DIR = ROOT / "static"
 
@@ -502,6 +502,81 @@ def delete_chat(chat_id: int) -> dict[str, str]:
         return {"status": "deleted"}
     finally:
         conn.close()
+
+
+# ======================================================================================
+# Perfil del usuario
+# ======================================================================================
+class ProfileUpdateRequest(BaseModel):
+    equipamiento: list[str] = Field(default_factory=list)
+    lesiones: list[str] = Field(default_factory=list)
+    notas: str = ""
+
+
+@app.get("/api/profile")
+def get_profile() -> dict[str, Any]:
+    """Perfil actual + vocabulario cerrado del catálogo (para armar los checkboxes)."""
+    conn = db.get_conn()
+    try:
+        return {"profile": db.get_profile(conn), "vocab": catalog.vocab()}
+    finally:
+        conn.close()
+
+
+@app.put("/api/profile")
+def update_profile(req: ProfileUpdateRequest) -> dict[str, Any]:
+    invalid_eq = set(req.equipamiento) - catalog.valid_ids("equipamiento")
+    invalid_les = set(req.lesiones) - catalog.valid_ids("lesiones")
+    if invalid_eq or invalid_les:
+        raise HTTPException(
+            status_code=400,
+            detail=f"IDs desconocidos: {sorted(invalid_eq | invalid_les)}",
+        )
+    conn = db.get_conn()
+    try:
+        db.save_profile(
+            conn,
+            equipamiento=req.equipamiento,
+            lesiones=req.lesiones,
+            notas=req.notas.strip(),
+        )
+        return {"profile": db.get_profile(conn)}
+    finally:
+        conn.close()
+
+
+# ======================================================================================
+# Catálogo de ejercicios
+# ======================================================================================
+@app.get("/api/catalog")
+def get_catalog(
+    grupo: Optional[str] = None,
+    nivel: Optional[str] = None,
+    equipamiento: Optional[str] = None,
+    evitar_lesiones: Optional[str] = None,
+) -> dict[str, Any]:
+    """Búsqueda en el catálogo local. `equipamiento` y `evitar_lesiones` van como CSV.
+
+    Semántica de `equipamiento`: ausente = no filtrar; presente (incluso vacío "") =
+    solo ejercicios cuyo equipamiento requerido esté completamente disponible.
+    """
+    if grupo and grupo not in catalog.valid_ids("grupos_musculares"):
+        raise HTTPException(status_code=400, detail=f"Grupo desconocido: {grupo}")
+    if nivel and nivel not in catalog.NIVEL_ORDEN:
+        raise HTTPException(status_code=400, detail=f"Nivel desconocido: {nivel}")
+
+    def _csv(value: Optional[str]) -> Optional[list[str]]:
+        if value is None:
+            return None
+        return [v for v in (s.strip() for s in value.split(",")) if v]
+
+    ejercicios = catalog.search(
+        grupo=grupo,
+        nivel=nivel,
+        equipamiento_disponible=_csv(equipamiento),
+        evitar_lesiones=_csv(evitar_lesiones),
+    )
+    return {"total": len(ejercicios), "ejercicios": ejercicios}
 
 
 # ======================================================================================

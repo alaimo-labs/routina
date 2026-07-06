@@ -1575,6 +1575,43 @@ code {
    ================================================================================== */
 .modal-panel--oneshot { max-width: 760px; }
 .modal-panel--run { height: min(720px, calc(100vh - 64px)); }
+.modal-panel--profile { max-width: 640px; }
+.profile-help {
+    color: var(--ink-soft);
+    font-size: .92rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+.check-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    margin: 10px 0 22px;
+}
+.check-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font-size: .9rem;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+    user-select: none;
+}
+.check-item:hover { border-color: var(--accent); }
+.check-item:has(input:checked) {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+}
+.check-item input {
+    accent-color: var(--accent);
+    margin: 0;
+    flex-shrink: 0;
+}
+.profile-notas { margin-top: 10px; }
 .run-detail-grid {
     display: flex;
     flex-direction: column;
