@@ -587,6 +587,69 @@
       "notas": "Secuencia piernas-torso-brazos. Cardio de bajo impacto de cuerpo completo."
     },
     {
+      "id": "rodaje_suave",
+      "nombre": "Rodaje suave (carrera continua)",
+      "grupos": ["cardio"],
+      "equipamiento": [],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Carrera continua a ritmo conversacional (puedes hablar mientras corres). La base del entrenamiento de resistencia."
+    },
+    {
+      "id": "tirada_larga",
+      "nombre": "Tirada larga",
+      "grupos": ["cardio"],
+      "equipamiento": [],
+      "nivel": "intermedio",
+      "contraindicado_para": [],
+      "notas": "La sesión clave de la semana para media maratón o maratón. Ritmo cómodo, aumenta la distancia de forma gradual (~10% semanal)."
+    },
+    {
+      "id": "intervalos_carrera",
+      "nombre": "Intervalos de carrera",
+      "grupos": ["cardio", "piernas"],
+      "equipamiento": [],
+      "nivel": "intermedio",
+      "contraindicado_para": ["rodilla", "tobillo"],
+      "notas": "Repeticiones rápidas (ej. 6 × 400 m) con trote o pausa entre series. Mejora el VO2 máx y el ritmo de carrera."
+    },
+    {
+      "id": "fartlek",
+      "nombre": "Fartlek (juego de ritmos)",
+      "grupos": ["cardio"],
+      "equipamiento": [],
+      "nivel": "intermedio",
+      "contraindicado_para": [],
+      "notas": "Cambios de ritmo libres dentro de un rodaje (ej. 1 min rápido / 2 min suave). Intensidad sin estructura rígida."
+    },
+    {
+      "id": "cuestas",
+      "nombre": "Cuestas (repeticiones en subida)",
+      "grupos": ["cardio", "piernas"],
+      "equipamiento": [],
+      "nivel": "avanzado",
+      "contraindicado_para": ["rodilla", "tobillo"],
+      "notas": "Subidas cortas a intensidad alta, bajando al trote. Fuerza específica de carrera con impacto controlado."
+    },
+    {
+      "id": "trote_regenerativo",
+      "nombre": "Trote regenerativo",
+      "grupos": ["cardio"],
+      "equipamiento": [],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Trote muy suave y corto, al día siguiente de sesiones exigentes. Recuperación activa."
+    },
+    {
+      "id": "caminata_rapida",
+      "nombre": "Caminata rápida",
+      "grupos": ["cardio"],
+      "equipamiento": [],
+      "nivel": "principiante",
+      "contraindicado_para": [],
+      "notas": "Cardio de bajo impacto; buena alternativa o complemento cuando la carrera está limitada por molestias."
+    },
+    {
       "id": "gato_camello",
       "nombre": "Gato-camello",
       "grupos": ["movilidad", "espalda"],

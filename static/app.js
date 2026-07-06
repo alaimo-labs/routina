@@ -36,6 +36,7 @@ const ICONS = {
     info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
     'chevrons-up-down': '<path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/>',
     user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
 };
 
 function icon(name, size = 16) {
@@ -60,14 +61,18 @@ const THEME_KEY = 'routina:theme';
 const state = {
     route: window.location.pathname,
     config: null,
-    chats: [],
-    currentChatId: null,
-    chatMessages: [],   // mensajes en /chat
+    chats: [],          // lista de conversaciones del modo activo (chat o agent)
+    // Estado por modo conversacional: /chat y /agent comparten la mecánica.
+    conv: {
+        chat: { chatId: null, messages: [] },
+        agent: { chatId: null, messages: [] },
+    },
     isGenerating: false,
     settings: {
         model: '',
         systemPromptOneshot: '',
         systemPromptChat: '',
+        systemPromptAgent: '',
     },
     routinesFilter: { objetivo: '', formato: '' },
     runsFilter: { status: '' },
@@ -90,6 +95,39 @@ function saveSettings() {
     try {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
     } catch {}
+}
+
+// /chat y /agent comparten la mecánica conversacional; esto mapea cada modo a sus
+// elementos del DOM y su endpoint. El modo activo se deriva de la ruta.
+const CONV_UI = {
+    chat: {
+        messagesId: 'chat-messages',
+        scrollId: 'chat-scroll',
+        inputId: 'chat-input',
+        sendBtnId: 'send-btn',
+        promptKey: 'systemPromptChat',
+        loadingText: 'Pensando…',
+        placeholder: 'Cuanto más concreto seas — objetivo, días disponibles, equipamiento, lesiones — mejor va a ser el plan.',
+        route: '/chat',
+    },
+    agent: {
+        messagesId: 'agent-messages',
+        scrollId: 'agent-scroll',
+        inputId: 'agent-input',
+        sendBtnId: 'agent-send-btn',
+        promptKey: 'systemPromptAgent',
+        loadingText: 'El agente está trabajando…',
+        placeholder: 'Pídele una rutina a tu agente: él lee tu perfil, busca en el catálogo y te pregunta lo que falte.',
+        route: '/agent',
+    },
+};
+
+function convMode() {
+    return state.route === '/agent' ? 'agent' : 'chat';
+}
+
+function activeConv() {
+    return state.conv[convMode()];
 }
 
 // Proveedor del modelo actualmente seleccionado (según el registro de /api/config).
@@ -139,6 +177,41 @@ const api = {
             throw new Error(data.detail || `Error ${r.status}`);
         }
         return r.json();
+    },
+    // El endpoint del agente streamea SSE: eventos {type:"tool"} mientras corre el
+    // loop y {type:"result"} al final. `onEvent` recibe los eventos intermedios.
+    async agentGenerate(body, onEvent) {
+        const r = await fetch('/api/agent/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        if (!r.ok) {
+            const data = await r.json().catch(() => ({}));
+            throw new Error(data.detail || `Error ${r.status}`);
+        }
+        const reader = r.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let result = null;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            let sep;
+            while ((sep = buffer.indexOf('\n\n')) !== -1) {
+                const chunk = buffer.slice(0, sep);
+                buffer = buffer.slice(sep + 2);
+                const line = chunk.split('\n').find(l => l.startsWith('data: '));
+                if (!line) continue;
+                const evt = JSON.parse(line.slice(6));
+                if (evt.type === 'result') result = evt.data;
+                else if (evt.type === 'error') throw new Error(evt.detail || 'Error del agente');
+                else if (onEvent) onEvent(evt);
+            }
+        }
+        if (!result) throw new Error('El agente no devolvió resultado.');
+        return result;
     },
     async listRuns(filter) {
         const params = new URLSearchParams();
@@ -423,9 +496,9 @@ function renderRoutineHTML(payload) {
     `;
 }
 
-// -------------------- Render: lista de chats (sidebar) --------------------
+// -------------------- Render: lista de chats (sidebar, compartida chat/agent) --------------------
 async function reloadChats() {
-    state.chats = await api.listChats('chat');
+    state.chats = await api.listChats(convMode());
     renderChatList();
 }
 
@@ -436,7 +509,7 @@ function renderChatList() {
         return;
     }
     wrap.innerHTML = state.chats.map(c => `
-        <div class="chat-item ${state.route === '/chat' && c.id === state.currentChatId ? 'active' : ''}" data-chat-id="${c.id}">
+        <div class="chat-item ${c.id === activeConv().chatId ? 'active' : ''}" data-chat-id="${c.id}">
             <div class="chat-item-title">${escapeHtml(c.title)}</div>
             <button class="chat-item-delete" data-delete-chat="${c.id}" aria-label="Borrar">
                 <span data-icon="trash" data-size="14"></span>
@@ -446,30 +519,74 @@ function renderChatList() {
     replaceIcons(wrap);
 }
 
-// -------------------- Render: chat (/chat) --------------------
-function renderChatMessages() {
-    const messages = document.getElementById('chat-messages');
-    messages.innerHTML = '';
-
-    if (state.chatMessages.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'chat-empty';
-        const examples = [
+// -------------------- Render: conversación (/chat y /agent) --------------------
+const CONV_EMPTY = {
+    chat: {
+        eyebrow: '02 · Chat',
+        title: 'Cuéntame qué quieres entrenar.',
+        sub: 'Cuanto más concreto seas — objetivo, días disponibles, equipamiento, lesiones — mejor va a ser el plan que armemos. Cada turno incluye los anteriores como contexto.',
+        examples: [
             'Soy intermedio, voy al gimnasio 4 veces por semana. Quiero ganar masa muscular en torso.',
             'Quiero empezar a entrenar pero no sé por dónde. 25 min por día y solo una colchoneta.',
             'Quiero correr una 10K en 3 meses. Hoy corro 4km. 3 sesiones + algo de fuerza.',
-        ];
+        ],
+    },
+    agent: {
+        eyebrow: '03 · Agente',
+        title: 'Tu agente entrenador.',
+        sub: 'Conversación con herramientas: el agente lee tu perfil, busca en el catálogo de ejercicios, te hace preguntas con opciones, valida la rutina y puede guardarla. Cada tool que usa queda visible en la conversación.',
+        examples: [
+            'Armame la rutina de esta semana.',
+            'Quiero una rutina de fuerza que no castigue mis lesiones.',
+            'Busca ejercicios de core que pueda hacer con mi equipamiento y armame algo de 20 minutos.',
+        ],
+    },
+};
+
+// ¿El último mensaje es una ronda de preguntas sin responder? En ese caso el
+// composer se deshabilita: la única vía es responder las opciones.
+function hasPendingQuestions(conv) {
+    const last = conv.messages[conv.messages.length - 1];
+    return Boolean(
+        last && last.role === 'assistant' && last.run
+        && (last.run.parsed || {}).tipo === 'preguntas'
+    );
+}
+
+function updateComposerState(mode) {
+    const ui = CONV_UI[mode];
+    const pending = hasPendingQuestions(state.conv[mode]);
+    const input = document.getElementById(ui.inputId);
+    const sendBtn = document.getElementById(ui.sendBtnId);
+    input.disabled = pending;
+    sendBtn.disabled = pending;
+    input.placeholder = pending
+        ? 'Responde las preguntas del agente para continuar…'
+        : ui.placeholder;
+}
+
+function renderConvMessages(mode) {
+    const ui = CONV_UI[mode];
+    const conv = state.conv[mode];
+    const messages = document.getElementById(ui.messagesId);
+    messages.innerHTML = '';
+    updateComposerState(mode);
+
+    if (conv.messages.length === 0) {
+        const meta = CONV_EMPTY[mode];
+        const empty = document.createElement('div');
+        empty.className = 'chat-empty';
         empty.innerHTML = `
             <div class="view-eyebrow">
-                <span class="mono-label">02 · Chat</span>
+                <span class="mono-label">${escapeHtml(meta.eyebrow)}</span>
                 <div class="view-eyebrow-rule"></div>
                 <span class="mono-label">Routina</span>
             </div>
-            <h3>Cuéntame qué quieres entrenar.</h3>
-            <p>Cuanto más concreto seas — objetivo, días disponibles, equipamiento, lesiones — mejor va a ser el plan que armemos. Cada turno incluye los anteriores como contexto.</p>
+            <h3>${escapeHtml(meta.title)}</h3>
+            <p>${escapeHtml(meta.sub)}</p>
             <div class="examples">
                 <div class="examples-label">Prueba con</div>
-                ${examples.map((ex, i) => `
+                ${meta.examples.map((ex, i) => `
                     <button class="example-chip" data-example="${escapeHtml(ex)}">
                         <span class="example-chip-num">${String(i + 1).padStart(2, '0')}</span>
                         <span>${escapeHtml(ex)}</span>
@@ -481,7 +598,8 @@ function renderChatMessages() {
         return;
     }
 
-    for (const msg of state.chatMessages) {
+    conv.messages.forEach((msg, idx) => {
+        const isLast = idx === conv.messages.length - 1;
         if (msg.role === 'user') {
             const node = document.createElement('div');
             node.className = 'msg-user';
@@ -494,40 +612,90 @@ function renderChatMessages() {
             node.innerHTML = `
                 <div class="assistant-card loading">
                     <div class="dots"><span></span><span></span><span></span></div>
-                    <span>Pensando…</span>
+                    <span class="loading-text">${escapeHtml(msg.text || ui.loadingText)}</span>
                 </div>
             `;
             messages.appendChild(node);
         } else if (msg.role === 'assistant') {
-            messages.appendChild(renderAssistantMessage(msg.run));
+            messages.appendChild(renderAssistantMessage(msg.run, { isLast }));
         } else if (msg.role === 'error') {
             const node = document.createElement('div');
             node.className = 'msg-assistant';
             node.innerHTML = `
                 <div class="assistant-card error-card">
-                    <div style="font-weight:600;margin-bottom:6px;">No pude generar la rutina</div>
+                    <div style="font-weight:600;margin-bottom:6px;">No pude generar la respuesta</div>
                     <div style="color:var(--error);font-size:.9rem;">${escapeHtml(msg.content || '')}</div>
                 </div>
             `;
             messages.appendChild(node);
         }
-    }
+    });
 
     replaceIcons(messages);
 
     requestAnimationFrame(() => {
-        const scroller = document.getElementById('chat-scroll');
+        const scroller = document.getElementById(ui.scrollId);
         scroller.scrollTop = scroller.scrollHeight;
     });
 }
 
-function renderAssistantMessage(run) {
+// Resumen legible de cada tool call para el log inline del agente.
+function toolChipHtml(tc) {
+    const r = tc.result || {};
+    const a = tc.args || {};
+    let detail = '';
+    if (tc.name === 'buscar_ejercicios') {
+        const filtros = [a.grupo, a.nivel].filter(Boolean).join(', ');
+        detail = `${filtros ? filtros + ' ' : ''}→ ${r.total ?? '?'}`;
+    } else if (tc.name === 'validar_rutina') {
+        detail = r.valida ? '✓ válida' : `✗ ${(r.errores || []).length} errores`;
+    } else if (tc.name === 'guardar_rutina') {
+        detail = r.guardada ? `✓ #${r.routine_id}` : '✗ inválida';
+    } else if (tc.name === 'preguntar_usuario') {
+        detail = `${(a.preguntas || []).length} pregunta(s)`;
+    } else if (r.error) {
+        detail = '✗ error';
+    }
+    return `<span class="tool-chip">${icon('wrench', 11)}<span>${escapeHtml(tc.name)}</span>${detail ? `<span class="tool-chip-detail">${escapeHtml(detail)}</span>` : ''}</span>`;
+}
+
+// Card de preguntas con opciones (tool preguntar_usuario). Si no es interactiva
+// (ya respondida o cargada del historial), se muestran las opciones deshabilitadas.
+function renderPreguntasHtml(preguntas, interactive) {
+    const blocks = (preguntas || []).map((q, qi) => `
+        <div class="pregunta-block" data-pregunta-id="${escapeHtml(q.id || String(qi))}" data-multiple="${q.multiple ? '1' : '0'}">
+            <div class="pregunta-texto">${escapeHtml(q.pregunta || '')}</div>
+            <div class="opciones">
+                ${(q.opciones || []).map(op => `
+                    <button class="opcion-btn" type="button" data-opcion="${escapeHtml(op)}" ${interactive ? '' : 'disabled'}>${escapeHtml(op)}</button>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+    return `
+        <div class="preguntas-card">
+            <div class="preguntas-label">El agente necesita saber</div>
+            ${blocks}
+            ${interactive ? `
+                <div class="preguntas-actions">
+                    <button class="btn btn-primary" data-responder disabled>Responder →</button>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function renderAssistantMessage(run, opts = {}) {
     const wrap = document.createElement('div');
     wrap.className = 'msg-assistant';
 
     let cardHtml = '';
     let cardClass = 'assistant-card';
     let actionsHtml = '';
+    // Log de tools usadas por el agente en este turno (los runs de chat no tienen).
+    const toolLogHtml = (run.tool_calls && run.tool_calls.length)
+        ? `<div class="tool-log">${run.tool_calls.map(toolChipHtml).join('')}</div>`
+        : '';
 
     if (run.status === 'api_error') {
         cardClass += ' error-card';
@@ -557,12 +725,19 @@ function renderAssistantMessage(run) {
                 <div class="code-block" style="margin-top:10px;">${escapeHtml(JSON.stringify(run.parsed, null, 2))}</div>
             </details>
         `;
+        // Si a pesar del schema_error hay preguntas (ej. el agente mandó más de las
+        // permitidas), se muestran igual para que la conversación pueda continuar.
+        if ((run.parsed || {}).tipo === 'preguntas') {
+            cardHtml += renderPreguntasHtml(run.parsed.preguntas, Boolean(opts.isLast));
+        }
     } else if (run.status === 'ok') {
-        // La respuesta de chat es un sobre { tipo: "rutina"|"mensaje", ... }.
+        // La respuesta es un sobre { tipo: "rutina"|"mensaje"|"preguntas", ... }.
         // La telemetría del run (latencia, tokens, modelo) vive en /historial, no acá.
         const parsed = run.parsed || {};
         if (parsed.tipo === 'mensaje') {
             cardHtml = `<div class="assistant-text">${escapeHtml(parsed.mensaje || '')}</div>`;
+        } else if (parsed.tipo === 'preguntas') {
+            cardHtml = renderPreguntasHtml(parsed.preguntas, Boolean(opts.isLast));
         } else {
             const rutina = parsed.tipo === 'rutina' ? parsed.rutina : parsed;
             cardHtml = renderRoutineHTML(rutina || {});
@@ -578,7 +753,7 @@ function renderAssistantMessage(run) {
         }
     }
 
-    wrap.innerHTML = `<div class="${cardClass}">${cardHtml}${actionsHtml}</div>`;
+    wrap.innerHTML = `${toolLogHtml}<div class="${cardClass}">${cardHtml}${actionsHtml}</div>`;
     return wrap;
 }
 
@@ -711,8 +886,9 @@ function renderRoute() {
         el.classList.toggle('active', el.dataset.route === state.route);
     });
 
-    // show/hide chat sidebar section
-    document.getElementById('sidebar-chat-section').hidden = state.route !== '/chat';
+    // show/hide chat sidebar section (compartida entre /chat y /agent)
+    const isConvRoute = state.route === '/chat' || state.route === '/agent';
+    document.getElementById('sidebar-chat-section').hidden = !isConvRoute;
 
     // toggle views
     const viewMap = {
@@ -729,9 +905,9 @@ function renderRoute() {
     // route-specific render
     if (state.route === '/') {
         renderHome();
-    } else if (state.route === '/chat') {
-        renderChatMessages();
-        renderChatList();
+    } else if (isConvRoute) {
+        renderConvMessages(convMode());
+        reloadChats();
     } else if (state.route === '/history') {
         renderHistorial();
     }
@@ -953,26 +1129,29 @@ async function saveOneshotRoutine() {
     }
 }
 
-// -------------------- Chat (/chat) actions --------------------
-function newChat() {
-    state.currentChatId = null;
-    state.chatMessages = [];
-    if (state.route !== '/chat') router.navigate('/chat');
-    else { renderChatList(); renderChatMessages(); }
-    setTimeout(() => document.getElementById('chat-input').focus(), 50);
+// -------------------- Conversación (/chat y /agent) actions --------------------
+function newConv() {
+    const mode = convMode();
+    const conv = state.conv[mode];
+    conv.chatId = null;
+    conv.messages = [];
+    renderChatList();
+    renderConvMessages(mode);
+    setTimeout(() => document.getElementById(CONV_UI[mode].inputId).focus(), 50);
 }
 
-async function loadChat(chatId) {
-    if (state.route !== '/chat') router.navigate('/chat');
-    state.currentChatId = chatId;
+async function loadConv(chatId) {
+    const mode = convMode();
+    const conv = state.conv[mode];
+    conv.chatId = chatId;
     renderChatList();
-    document.getElementById('chat-messages').innerHTML = `<div class="empty-state"><p>Cargando…</p></div>`;
+    document.getElementById(CONV_UI[mode].messagesId).innerHTML = `<div class="empty-state"><p>Cargando…</p></div>`;
     try {
         const data = await api.getChat(chatId);
-        state.chatMessages = [];
+        conv.messages = [];
         for (const run of data.runs) {
-            state.chatMessages.push({ role: 'user', content: run.user_input });
-            state.chatMessages.push({
+            conv.messages.push({ role: 'user', content: run.user_input });
+            conv.messages.push({
                 role: 'assistant',
                 run: {
                     run_id: run.id,
@@ -986,13 +1165,14 @@ async function loadChat(chatId) {
                     input_tokens: run.input_tokens,
                     output_tokens: run.output_tokens,
                     model: run.model,
+                    tool_calls: run.tool_calls || [],
                     _saved: false,
                 }
             });
         }
-        renderChatMessages();
+        renderConvMessages(mode);
     } catch (e) {
-        document.getElementById('chat-messages').innerHTML = `<div class="empty-state"><p>${escapeHtml(e.message)}</p></div>`;
+        document.getElementById(CONV_UI[mode].messagesId).innerHTML = `<div class="empty-state"><p>${escapeHtml(e.message)}</p></div>`;
     }
 }
 
@@ -1005,10 +1185,11 @@ async function deleteChat(chatId) {
     if (!ok) return;
     try {
         await api.deleteChat(chatId);
-        if (state.currentChatId === chatId) {
-            state.currentChatId = null;
-            state.chatMessages = [];
-            renderChatMessages();
+        const conv = activeConv();
+        if (conv.chatId === chatId) {
+            conv.chatId = null;
+            conv.messages = [];
+            renderConvMessages(convMode());
         }
         await reloadChats();
         showToast('Conversación borrada');
@@ -1017,44 +1198,70 @@ async function deleteChat(chatId) {
     }
 }
 
-async function chatSend() {
+// Texto de progreso en vivo por tool (el agente streamea qué está haciendo).
+const TOOL_PROGRESS_LABELS = {
+    leer_perfil: 'Leyendo tu perfil…',
+    buscar_ejercicios: 'Buscando ejercicios en el catálogo…',
+    preguntar_usuario: 'Preparando preguntas…',
+    validar_rutina: 'Validando la rutina…',
+    guardar_rutina: 'Guardando la rutina…',
+};
+
+// `presetText` permite enviar sin pasar por el textarea (respuestas de preguntas).
+async function convSend(presetText = null) {
     if (state.isGenerating) return;
-    const input = document.getElementById('chat-input');
-    const text = input.value.trim();
+    const mode = convMode();
+    const ui = CONV_UI[mode];
+    const conv = state.conv[mode];
+    const input = document.getElementById(ui.inputId);
+    const text = (presetText != null ? presetText : input.value).trim();
     if (!text) return;
     if (!selectedProviderHasKey()) {
         showToast(`Falta la API key de ${providerForModel(state.settings.model)} en .env`);
         return;
     }
 
-    state.chatMessages.push({ role: 'user', content: text });
-    state.chatMessages.push({ role: 'loading' });
+    conv.messages.push({ role: 'user', content: text });
+    const loadingMsg = { role: 'loading', text: null };
+    conv.messages.push(loadingMsg);
     state.isGenerating = true;
-    input.value = '';
-    autoresizeTextarea(input);
-    renderChatMessages();
+    if (presetText == null) {
+        input.value = '';
+        autoresizeTextarea(input);
+    }
+    renderConvMessages(mode);
 
     const body = {
         user_input: text,
         model: state.settings.model,
-        system_prompt: state.settings.systemPromptChat,
-        chat_id: state.currentChatId,
+        system_prompt: state.settings[ui.promptKey],
+        chat_id: conv.chatId,
+    };
+
+    // Progreso en vivo: cada evento de tool actualiza el texto del indicador.
+    const onAgentEvent = (evt) => {
+        if (evt.type !== 'tool') return;
+        loadingMsg.text = TOOL_PROGRESS_LABELS[evt.name] || `Usando ${evt.name}…`;
+        const el = document.querySelector(`#${ui.messagesId} .assistant-card.loading .loading-text`);
+        if (el) el.textContent = loadingMsg.text;
     };
 
     try {
-        const result = await api.chatGenerate(body);
-        state.chatMessages = state.chatMessages.filter(m => m.role !== 'loading');
-        state.chatMessages.push({ role: 'assistant', run: result });
-        if (state.currentChatId == null && result.chat_id) {
-            state.currentChatId = result.chat_id;
+        const result = mode === 'agent'
+            ? await api.agentGenerate(body, onAgentEvent)
+            : await api.chatGenerate(body);
+        conv.messages = conv.messages.filter(m => m.role !== 'loading');
+        conv.messages.push({ role: 'assistant', run: result });
+        if (conv.chatId == null && result.chat_id) {
+            conv.chatId = result.chat_id;
         }
         await reloadChats();
     } catch (e) {
-        state.chatMessages = state.chatMessages.filter(m => m.role !== 'loading');
-        state.chatMessages.push({ role: 'error', content: e.message });
+        conv.messages = conv.messages.filter(m => m.role !== 'loading');
+        conv.messages.push({ role: 'error', content: e.message });
     } finally {
         state.isGenerating = false;
-        renderChatMessages();
+        renderConvMessages(mode);
     }
 }
 
@@ -1068,8 +1275,8 @@ async function resetAll() {
     try {
         await api.resetAll();
         state.chats = [];
-        state.currentChatId = null;
-        state.chatMessages = [];
+        state.conv.chat = { chatId: null, messages: [] };
+        state.conv.agent = { chatId: null, messages: [] };
         showToast('Todo borrado');
         renderChatList();
         renderRoute();
@@ -1081,12 +1288,12 @@ async function resetAll() {
 async function saveRunFromChat(runId) {
     try {
         await api.saveRoutine(runId);
-        for (const m of state.chatMessages) {
+        for (const m of activeConv().messages) {
             if (m.role === 'assistant' && m.run && m.run.run_id === runId) {
                 m.run._saved = true;
             }
         }
-        renderChatMessages();
+        renderConvMessages(convMode());
         showToast('Rutina guardada');
     } catch (e) {
         showToast('No pude guardar: ' + e.message);
@@ -1114,6 +1321,7 @@ function openDrawer() {
 
     document.getElementById('schema-path-oneshot').textContent = state.config.schema_paths?.oneshot || '…';
     document.getElementById('schema-path-chat').textContent = state.config.schema_paths?.chat || '…';
+    document.getElementById('schema-path-agent').textContent = state.config.schema_paths?.agent || '…';
 }
 // El estado de la API key es el del proveedor del modelo seleccionado.
 function refreshApiKeyStatus() {
@@ -1146,6 +1354,7 @@ function commitSettingsFromDOM() {
 const PROMPT_MODE_META = {
     oneshot: { settingsKey: 'systemPromptOneshot', title: 'System prompt · One-shot' },
     chat: { settingsKey: 'systemPromptChat', title: 'System prompt · Chat' },
+    agent: { settingsKey: 'systemPromptAgent', title: 'System prompt · Agente' },
 };
 
 function openPromptModal(mode) {
@@ -1313,7 +1522,7 @@ function bindEvents() {
     // Sidebar
     document.querySelector('.sidebar').addEventListener('click', (ev) => {
         if (ev.target.closest('#collapse-sidebar')) { toggleSidebar(); return; }
-        if (ev.target.closest('#new-chat-btn')) { newChat(); return; }
+        if (ev.target.closest('#new-chat-btn')) { newConv(); return; }
         if (ev.target.closest('#open-profile')) { openProfileModal(); return; }
         if (ev.target.closest('#open-settings')) { openDrawer(); return; }
         const delBtn = ev.target.closest('[data-delete-chat]');
@@ -1323,7 +1532,7 @@ function bindEvents() {
             return;
         }
         const chatBtn = ev.target.closest('[data-chat-id]');
-        if (chatBtn) loadChat(parseInt(chatBtn.dataset.chatId, 10));
+        if (chatBtn) loadConv(parseInt(chatBtn.dataset.chatId, 10));
     });
 
     document.getElementById('show-sidebar').addEventListener('click', toggleSidebar);
@@ -1370,19 +1579,23 @@ function bindEvents() {
         }
     });
 
-    // Composer (/chat)
-    const chatInput = document.getElementById('chat-input');
-    chatInput.addEventListener('input', () => autoresizeTextarea(chatInput));
-    chatInput.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter' && !ev.shiftKey) {
-            ev.preventDefault();
-            chatSend();
-        }
-    });
-    document.getElementById('send-btn').addEventListener('click', chatSend);
+    // Composers (/chat y /agent)
+    for (const mode of ['chat', 'agent']) {
+        const ui = CONV_UI[mode];
+        const input = document.getElementById(ui.inputId);
+        input.addEventListener('input', () => autoresizeTextarea(input));
+        input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' && !ev.shiftKey) {
+                ev.preventDefault();
+                convSend();
+            }
+        });
+    }
+    document.getElementById('send-btn').addEventListener('click', () => convSend());
+    document.getElementById('agent-send-btn').addEventListener('click', () => convSend());
 
-    // Chat messages click handlers
-    document.getElementById('chat-messages').addEventListener('click', (ev) => {
+    // Click handlers compartidos de los mensajes (/chat y /agent)
+    const handleConvClick = (ev) => {
         const saveBtn = ev.target.closest('[data-save-run]');
         if (saveBtn && !saveBtn.disabled) {
             saveRunFromChat(parseInt(saveBtn.dataset.saveRun, 10));
@@ -1390,12 +1603,45 @@ function bindEvents() {
         }
         const exampleBtn = ev.target.closest('[data-example]');
         if (exampleBtn) {
-            const ta = document.getElementById('chat-input');
+            const ta = document.getElementById(CONV_UI[convMode()].inputId);
             ta.value = exampleBtn.dataset.example;
             autoresizeTextarea(ta);
             ta.focus();
+            return;
         }
-    });
+        // Preguntas del agente: toggle de opciones + responder
+        const opcionBtn = ev.target.closest('.opcion-btn');
+        if (opcionBtn && !opcionBtn.disabled) {
+            const block = opcionBtn.closest('.pregunta-block');
+            if (block.dataset.multiple !== '1') {
+                block.querySelectorAll('.opcion-btn.selected').forEach(b => {
+                    if (b !== opcionBtn) b.classList.remove('selected');
+                });
+            }
+            opcionBtn.classList.toggle('selected');
+            const card = opcionBtn.closest('.preguntas-card');
+            const responder = card.querySelector('[data-responder]');
+            if (responder) {
+                const completo = Array.from(card.querySelectorAll('.pregunta-block'))
+                    .every(b => b.querySelector('.opcion-btn.selected'));
+                responder.disabled = !completo;
+            }
+            return;
+        }
+        const responderBtn = ev.target.closest('[data-responder]');
+        if (responderBtn && !responderBtn.disabled) {
+            const card = responderBtn.closest('.preguntas-card');
+            const lines = Array.from(card.querySelectorAll('.pregunta-block')).map(b => {
+                const pregunta = b.querySelector('.pregunta-texto').textContent;
+                const elegidas = Array.from(b.querySelectorAll('.opcion-btn.selected'))
+                    .map(x => x.dataset.opcion);
+                return `${pregunta} ${elegidas.join(', ')}`;
+            });
+            convSend(lines.join('\n'));
+        }
+    };
+    document.getElementById('chat-messages').addEventListener('click', handleConvClick);
+    document.getElementById('agent-messages').addEventListener('click', handleConvClick);
 
     // Home (/)
     document.getElementById('btn-new-routine').addEventListener('click', openOneshotModal);
@@ -1511,10 +1757,12 @@ async function init() {
                 : state.config.default_model;
             state.settings.systemPromptOneshot = saved.systemPromptOneshot || defaultPrompts.oneshot;
             state.settings.systemPromptChat = saved.systemPromptChat || defaultPrompts.chat;
+            state.settings.systemPromptAgent = saved.systemPromptAgent || defaultPrompts.agent;
         } else {
             state.settings.model = state.config.default_model;
             state.settings.systemPromptOneshot = defaultPrompts.oneshot;
             state.settings.systemPromptChat = defaultPrompts.chat;
+            state.settings.systemPromptAgent = defaultPrompts.agent;
         }
         saveSettings();
     } catch (e) {

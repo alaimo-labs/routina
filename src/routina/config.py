@@ -10,15 +10,17 @@ PROMPTS_DIR = ROOT / "prompts"
 SCHEMAS_DIR = ROOT / "schemas"
 CATALOG_PATH = ROOT / "catalog" / "ejercicios_v1.json"
 # Cada modo de interacción tiene su propio system prompt y su propio schema de
-# respuesta. Cuando exista el modo agéntico, se suma acá como "agent".
-MODES = ("oneshot", "chat")
+# respuesta.
+MODES = ("oneshot", "chat", "agent")
 PROMPT_PATHS = {
     "oneshot": PROMPTS_DIR / "routina_oneshot.txt",
     "chat": PROMPTS_DIR / "routina_chat.txt",
+    "agent": PROMPTS_DIR / "routina_agent.txt",
 }
 SCHEMA_PATHS = {
     "oneshot": SCHEMAS_DIR / "routina_v1.json",
     "chat": SCHEMAS_DIR / "chat_v1.json",
+    "agent": SCHEMAS_DIR / "agent_v1.json",
 }
 
 # Registro de modelos con su proveedor. El frontend arma el <select> a partir de

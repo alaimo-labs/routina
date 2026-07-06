@@ -1,12 +1,14 @@
 import json
 import os
+import queue
 import sys
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -29,7 +31,7 @@ if os.environ.get("VERICA_TOKEN"):
     _verica_on = verica.init(service_name="routina")
 
 # Recién ahora importamos llm/db/validate; los SDKs de LLM se importan ya parcheados.
-from routina import catalog, db, llm, validate  # noqa: E402
+from routina import agent_tools, catalog, db, llm, validate  # noqa: E402
 
 STATIC_DIR = ROOT / "static"
 
@@ -112,13 +114,31 @@ def _make_chat_title(user_input: str) -> str:
 
 
 def _build_prior_messages(prior_runs: list) -> list[dict[str, Any]]:
-    """A partir de runs previos en orden cronológico, arma el historial user/assistant."""
+    """A partir de runs previos en orden cronológico, arma el historial user/assistant.
+
+    Los turnos de preguntas del agente NO se reinyectan como el sobre JSON
+    {tipo: "preguntas"}: si el modelo ve ese JSON como mensaje assistant previo,
+    aprende a imitarlo como texto en vez de usar la tool preguntar_usuario. Se
+    reemplazan por una descripción neutra (las respuestas del usuario ya citan
+    cada pregunta, así que no se pierde contexto).
+    """
     messages: list[dict[str, Any]] = []
     for r in prior_runs:
         if r["user_input"]:
             messages.append({"role": "user", "content": r["user_input"]})
-        if r["raw_response"]:
-            messages.append({"role": "assistant", "content": r["raw_response"]})
+        if not r["raw_response"]:
+            continue
+        content = r["raw_response"]
+        parsed = json.loads(r["parsed_json"]) if r["parsed_json"] else None
+        if isinstance(parsed, dict) and parsed.get("tipo") == "preguntas":
+            listado = "\n".join(
+                f"- {q.get('pregunta', '')}" for q in parsed.get("preguntas", [])
+            )
+            content = (
+                "(Con la herramienta preguntar_usuario le hice al usuario estas preguntas:)\n"
+                + listado
+            )
+        messages.append({"role": "assistant", "content": content})
     return messages
 
 
@@ -278,6 +298,146 @@ def chat_generate(req: ChatGenerateRequest) -> dict[str, Any]:
         "model": result.model,
         "num_turns_in_chat": (len(prior_messages) // 2) + 1,
     }
+
+
+# Loops agénticos pausados esperando respuesta del usuario (preguntar_usuario),
+# por chat_id. En memoria a propósito: el estado es efímero (una pregunta abierta
+# en una sesión viva) y si se pierde —reinicio del server, cambio de modelo— el
+# turno cae al fallback de historial reconstruido (_build_prior_messages).
+AGENT_PENDING: dict[int, dict[str, Any]] = {}
+
+
+@app.post("/api/agent/generate")
+def agent_generate(req: ChatGenerateRequest) -> StreamingResponse:
+    """Generación agéntica: loop con tools dentro de un chat de modo 'agent'.
+
+    Responde Server-Sent Events para que la UI muestre el progreso en vivo:
+    eventos {"type": "tool", "name": ...} por cada tool que arranca, y al final
+    {"type": "result", "data": {...}} con el mismo payload que /api/chat/generate
+    (+ tool_calls). Los errores previos al stream (API key, chat inexistente)
+    salen como HTTP 4xx normales.
+
+    Si el chat tiene un loop pausado en preguntar_usuario (AGENT_PENDING), este
+    turno lo reanuda: el user_input viaja al proveedor como tool_result nativo.
+    """
+    provider = _common_pre_checks(req)
+    api_key = config.get_api_key(provider)
+
+    conn = db.get_conn()
+    try:
+        chat_id = req.chat_id
+        chat_was_created = False
+        prior_messages: list[dict[str, Any]] = []
+        if chat_id is None:
+            chat_id = db.insert_chat(
+                conn,
+                title=_make_chat_title(req.user_input),
+                mode="agent",
+            )
+            chat_was_created = True
+        else:
+            existing = db.get_chat(conn, chat_id)
+            if existing is None:
+                raise HTTPException(status_code=404, detail="Chat no encontrado.")
+            prior_runs = db.list_runs_for_chat(conn, chat_id)
+            prior_messages = _build_prior_messages(prior_runs)
+    finally:
+        conn.close()
+
+    # ¿Hay un loop pausado para reanudar? Solo si el proveedor y modelo no cambiaron
+    # (el estado nativo no es portable entre proveedores); si cambiaron, se descarta
+    # y el turno sigue por el fallback de historial reconstruido.
+    resume_state = None
+    pending = AGENT_PENDING.pop(chat_id, None)
+    if pending is not None and pending["provider"] == provider and pending["model"] == req.model:
+        resume_state = pending["state"]
+
+    events: "queue.Queue[dict[str, Any] | None]" = queue.Queue()
+
+    def worker() -> None:
+        try:
+            # guardar_rutina inserta rutinas antes de que exista el run; se linkean después.
+            saved_routine_ids: list[int] = []
+
+            def tool_executor(name: str, args: dict[str, Any]) -> dict[str, Any]:
+                return agent_tools.execute(name, args, saved_routine_ids=saved_routine_ids)
+
+            with verica.conversation(f"routina-agent-{chat_id}"):
+                result = llm.run_agent(
+                    provider=provider,
+                    api_key=api_key,
+                    model=req.model,
+                    user_input=req.user_input,
+                    system_prompt=req.system_prompt,
+                    prior_messages=prior_messages,
+                    tools=agent_tools.tool_defs(),
+                    tool_executor=tool_executor,
+                    on_tool_start=lambda name: events.put({"type": "tool", "name": name}),
+                    resume_state=resume_state,
+                )
+
+            # Si el loop quedó pausado en preguntar_usuario, guardar su estado para
+            # reanudarlo cuando llegue la respuesta.
+            if result.pending_state is not None:
+                AGENT_PENDING[chat_id] = {
+                    "provider": provider,
+                    "model": req.model,
+                    "state": result.pending_state,
+                }
+
+            run_id, status, schema_errors = _validate_and_persist_run(
+                req=req, result=result, chat_id=chat_id, mode="agent"
+            )
+
+            if saved_routine_ids:
+                link_conn = db.get_conn()
+                try:
+                    db.link_routines_to_run(link_conn, saved_routine_ids, run_id)
+                finally:
+                    link_conn.close()
+
+            events.put(
+                {
+                    "type": "result",
+                    "data": {
+                        "run_id": run_id,
+                        "chat_id": chat_id,
+                        "chat_was_created": chat_was_created,
+                        "status": status,
+                        "parsed": result.parsed,
+                        "parse_error": result.parse_error,
+                        "schema_errors": schema_errors,
+                        "raw": result.raw,
+                        "api_error": result.api_error,
+                        "latency_ms": result.latency_ms,
+                        "input_tokens": result.input_tokens,
+                        "output_tokens": result.output_tokens,
+                        "model": result.model,
+                        "tool_calls": result.tool_calls,
+                        "saved_routine_ids": saved_routine_ids,
+                        "num_iteraciones": result.num_turns,
+                    },
+                }
+            )
+        except Exception as exc:  # el stream ya arrancó: el error viaja como evento
+            events.put({"type": "error", "detail": f"{type(exc).__name__}: {exc}"})
+        finally:
+            events.put(None)
+
+    threading.Thread(target=worker, daemon=True).start()
+
+    def sse_stream():
+        while True:
+            item = events.get()
+            if item is None:
+                break
+            yield f"data: {json.dumps(item, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        sse_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 # ======================================================================================
@@ -499,6 +659,7 @@ def delete_chat(chat_id: int) -> dict[str, str]:
         if existing is None:
             raise HTTPException(status_code=404, detail="Chat no encontrado.")
         db.delete_chat(conn, chat_id)
+        AGENT_PENDING.pop(chat_id, None)
         return {"status": "deleted"}
     finally:
         conn.close()
@@ -587,6 +748,7 @@ def reset_all() -> dict[str, Any]:
     conn = db.get_conn()
     try:
         counts = db.reset_all(conn)
+        AGENT_PENDING.clear()
         return {"status": "reset", "deleted": counts}
     finally:
         conn.close()

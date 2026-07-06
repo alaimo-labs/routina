@@ -38,7 +38,6 @@
                 <a href="/agent" data-link class="mode-item" data-route="/agent">
                     <span data-icon="bot"></span>
                     <span class="mode-label">Agente</span>
-                    <span class="badge-soon">Pronto</span>
                 </a>
             </nav>
 
@@ -94,7 +93,7 @@
                     <div class="view-header-row">
                         <div>
                             <h2>Tus rutinas guardadas.</h2>
-                            <p class="view-sub">La colección completa, ordenada por fecha. Generá una nueva o revisá las anteriores.</p>
+                            <p class="view-sub">La colección completa, ordenada por fecha. Genera una nueva o revisa las anteriores.</p>
                         </div>
                         <button class="btn-cta-large" id="btn-new-routine" type="button">
                             <span data-icon="plus" data-size="13"></span>
@@ -131,34 +130,25 @@
                 </div>
             </section>
 
-            <!-- ----- /agent → placeholder ----- -->
+            <!-- ----- /agent → conversación con tools ----- -->
             <section class="view view-agent" id="view-agent">
-                <div class="agent-placeholder">
-                    <div class="view-eyebrow">
-                        <span class="mono-label">03 · Agente</span>
-                        <div class="view-eyebrow-rule"></div>
-                        <span class="mono-label">Routina</span>
+                <div class="chat-scroll" id="agent-scroll">
+                    <div class="chat-messages" id="agent-messages"></div>
+                </div>
+                <div class="composer">
+                    <div class="composer-inner">
+                        <textarea
+                            id="agent-input"
+                            class="composer-input"
+                            placeholder="Pídele una rutina a tu agente: él lee tu perfil, busca en el catálogo y te pregunta lo que falte."
+                            rows="1"
+                        ></textarea>
+                        <button id="agent-send-btn" class="send-btn" type="button" aria-label="Enviar">
+                            <span>Enviar</span>
+                            <span>→</span>
+                        </button>
                     </div>
-                    <h2>Modo Agente.</h2>
-                    <p>Multi-turno + tool calls + recuperación. Llega más adelante en el programa de evals.</p>
-                    <p class="agent-soon">· en desarrollo</p>
-                    <div class="agent-features">
-                        <div class="agent-feature">
-                            <span class="agent-feature-num">01</span>
-                            <span>Function calling</span>
-                            <span class="agent-feature-desc">Tools sobre la rutina</span>
-                        </div>
-                        <div class="agent-feature">
-                            <span class="agent-feature-num">02</span>
-                            <span>Retrieval (RAG)</span>
-                            <span class="agent-feature-desc">Recuperación de contexto</span>
-                        </div>
-                        <div class="agent-feature">
-                            <span class="agent-feature-num">03</span>
-                            <span>Loop multi-step</span>
-                            <span class="agent-feature-desc">Planifica · ejecuta · revisa</span>
-                        </div>
-                    </div>
+                    <div class="composer-hint">↩ enviar · ⇧ + ↩ nueva línea · el agente usa tools: perfil, catálogo, validación, guardado</div>
                 </div>
             </section>
 
@@ -171,7 +161,7 @@
                         <span class="mono-label">Traza de evals</span>
                     </div>
                     <h2>Historial de corridas.</h2>
-                    <p class="view-sub">Toda la traza: éxitos y fallos, one-shot y chat. Cada llamada al modelo queda registrada.</p>
+                    <p class="view-sub">Toda la traza: éxitos y fallos, one-shot, chat y agente. Cada llamada al modelo queda registrada.</p>
                 </header>
                 <div class="filters">
                     <div id="status-pills" class="pills">
@@ -229,13 +219,18 @@
                                     <span>System prompt · Chat</span>
                                     <span class="prompt-open-arrow">›</span>
                                 </button>
+                                <button class="prompt-open-btn" data-open-prompt="agent" type="button">
+                                    <span>System prompt · Agente</span>
+                                    <span class="prompt-open-arrow">›</span>
+                                </button>
                             </div>
                         </div>
                     </div>
 
                     <div class="schema-info">
                         Schema one-shot: <code id="schema-path-oneshot">…</code><br>
-                        Schema chat: <code id="schema-path-chat">…</code>
+                        Schema chat: <code id="schema-path-chat">…</code><br>
+                        Schema agente: <code id="schema-path-agent">…</code>
                     </div>
 
                     <div class="danger-zone">

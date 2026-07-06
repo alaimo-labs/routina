@@ -149,7 +149,7 @@ La app expone tres "modos" como rutas distintas, alineadas con la progresión de
 
 - **`/` Rutinas (one-shot)** — biblioteca de rutinas guardadas con un botón **"+ Nueva rutina"** que abre un modal. Escribes el caso, generas la rutina y decides si guardarla o descartarla. Cada generación es independiente, sin contexto previo. Es el modo más simple para evaluar calidad de salida pura.
 - **`/chat` Chat (multi-turno)** — conversación al estilo ChatGPT/Claude. Cada turno se acumula en el contexto del LLM, así puedes refinar (_"hazla más corta"_, _"cambia el formato a HIIT"_). El modelo decide en cada turno si responde con un mensaje conversacional (para preguntar o aclarar) o con una rutina; ambos son JSON con la forma `{"tipo": "mensaje" | "rutina", ...}`. El historial de chats persiste en la barra lateral. Pensado para evaluar coherencia conversacional y la decisión mensaje-vs-rutina.
-- **`/agent` Agente** — placeholder por ahora. Vendrá en encuentros futuros del curso con tool calling, RAG y loop multi-step.
+- **`/agent` Agente** — conversación con herramientas (tool calling). El agente lee tu perfil, busca en el catálogo curado de ejercicios, te hace preguntas con opciones (multiple choice), valida la rutina contra el schema antes de entregarla y puede guardarla en tu biblioteca. Cada tool que usa queda visible en la conversación como chips, y la traza completa (llamadas, argumentos y resultados) queda en el historial. Pensado para evaluar agentes: elección de tools, grounding en el catálogo y respeto del perfil.
 
 Adicionalmente hay **`/historial`**: la traza completa de evals — toda corrida (one-shot o chat, exitosa o fallida) queda registrada con su input, prompt, respuesta cruda, errores y mensajes de la traza.
 
@@ -195,17 +195,20 @@ routina/
 ├── src/routina/
 │   ├── config.py               # Rutas y carga de .env
 │   ├── db.py                   # SQLite: chats, runs, routines
-│   ├── llm.py                  # Capa multi-proveedor (OpenAI, Anthropic, Google)
+│   ├── llm.py                  # Capa multi-proveedor + loop agéntico con tools
+│   ├── agent_tools.py          # Tools del agente: definiciones y ejecución
 │   ├── catalog.py              # Búsqueda sobre el catálogo de ejercicios
 │   └── validate.py             # Validación contra el JSON Schema
 ├── catalog/
 │   └── ejercicios_v1.json      # Catálogo de ejercicios con vocabulario cerrado
 ├── prompts/
 │   ├── routina_oneshot.txt     # System prompt por defecto del modo one-shot
-│   └── routina_chat.txt        # System prompt por defecto del modo chat
+│   ├── routina_chat.txt        # System prompt por defecto del modo chat
+│   └── routina_agent.txt       # System prompt por defecto del modo agente
 ├── schemas/
 │   ├── routina_v1.json         # JSON Schema de la rutina (one-shot)
-│   └── chat_v1.json            # JSON Schema del sobre de chat (mensaje | rutina)
+│   ├── chat_v1.json            # JSON Schema del sobre de chat (mensaje | rutina)
+│   └── agent_v1.json           # JSON Schema del sobre del agente (+ preguntas)
 └── data/                       # SQLite (se crea solo, no se versiona)
 ```
 
@@ -219,6 +222,7 @@ El frontend es una SPA estática que habla con FastAPI vía estos endpoints (út
 | -------- | ----------------------- | ------------------------------------------------------------------------ |
 | `POST`   | `/api/oneshot/generate` | Generación independiente, sin chat ni contexto previo                    |
 | `POST`   | `/api/chat/generate`    | Generación dentro de un chat: incluye los turnos previos como contexto   |
+| `POST`   | `/api/agent/generate`   | Loop agéntico con tools (perfil, catálogo, preguntas, validación, guardado) |
 | `GET`    | `/api/chats?mode=chat`  | Lista de chats persistidos                                               |
 | `GET`    | `/api/chats/{id}`       | Detalle de un chat con todos sus runs                                    |
 | `DELETE` | `/api/chats/{id}`       | Borra un chat (las rutinas guardadas se mantienen)                       |

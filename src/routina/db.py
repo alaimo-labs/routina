@@ -305,6 +305,15 @@ def delete_routine(conn: sqlite3.Connection, routine_id: int) -> None:
     conn.commit()
 
 
+def link_routines_to_run(conn: sqlite3.Connection, routine_ids: list[int], run_id: int) -> None:
+    """Linkea rutinas guardadas por el agente (insertadas antes de que existiera el run)."""
+    conn.executemany(
+        "UPDATE routines SET run_id = ? WHERE id = ?",
+        [(run_id, rid) for rid in routine_ids],
+    )
+    conn.commit()
+
+
 # ----- Perfil del usuario -----
 # Una sola fila (id=1): la app es single-user local. El agente lo consulta vía tool.
 
