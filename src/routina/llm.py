@@ -8,13 +8,11 @@ from google import genai
 from google.genai import types as genai_types
 from openai import OpenAI, OpenAIError
 
-# Guardrail multi-proveedor: algunos modos de salida JSON (p. ej. la Responses API de
-# OpenAI con text.format=json_object) requieren que la palabra "json" aparezca en al
-# menos un mensaje de `input`; el system prompt no cuenta. Anexamos este sufijo al
-# contenido que enviamos al modelo, de forma uniforme en los tres proveedores. El
-# `user_input` original (sin sufijo) se preserva intacto en DB para no contaminar la
-# traza de evals.
-_JSON_HINT_SUFFIX = "\n\nResponde en formato JSON."
+# Los tres proveedores se llaman SIN modo JSON del API (ni text.format de OpenAI, ni
+# response_mime_type de Google): la instrucción de responder JSON vive únicamente en
+# el system prompt. Así el user_input viaja intacto al proveedor (la traza de
+# observabilidad coincide con lo persistido en DB) y la capa de parse_error se
+# ejercita en igualdad de condiciones en los tres proveedores.
 
 # max_tokens para los proveedores que lo exigen (Anthropic) o aceptan (Google).
 _MAX_OUTPUT_TOKENS = 8192
@@ -50,9 +48,9 @@ def generate_routine(
 
     `prior_messages` permite multi-turno: si viene, los mensajes previos (roles
     user/assistant) van antes del nuevo `user_input`, dándole al LLM el contexto de
-    la conversación. Cada proveedor se configura en modo JSON suelto (no
-    schema-enforced) para que la validación en tres capas de la app siga siendo
-    observable y comparable entre proveedores.
+    la conversación. Ningún proveedor usa modo JSON del API: el formato se pide
+    solo por prompting (system prompt), para que la validación en tres capas de la
+    app siga siendo observable y comparable entre proveedores.
     """
     if provider == "anthropic":
         return _generate_anthropic(
@@ -96,9 +94,9 @@ def _finalize(
 
     if raw_text and not api_error:
         messages.append({"role": "assistant", "content": raw_text})
-        # Algunos modelos (típicamente Anthropic en modo JSON suelto) envuelven la
-        # respuesta en un code fence markdown (```json ... ```). Lo quitamos solo
-        # para parsear; `raw` conserva la respuesta original para la traza de evals.
+        # Sin modo JSON del API, cualquier proveedor puede envolver la respuesta en
+        # un code fence markdown (```json ... ```). Lo quitamos solo para parsear;
+        # `raw` conserva la respuesta original para la traza de evals.
         text_to_parse = _strip_code_fence(raw_text)
         try:
             parsed = json.loads(text_to_parse)
@@ -134,7 +132,6 @@ def _generate_openai(
 ) -> LLMResult:
     client = OpenAI(api_key=api_key)
 
-    user_content_for_api = user_input + _JSON_HINT_SUFFIX
     prior = list(prior_messages or [])
 
     # `messages` es la traza que se persiste (incluye el system prompt si lo hay).
@@ -142,12 +139,11 @@ def _generate_openai(
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
     messages.extend(prior)
-    messages.append({"role": "user", "content": user_content_for_api})
+    messages.append({"role": "user", "content": user_input})
 
-    input_messages = list(prior) + [{"role": "user", "content": user_content_for_api}]
+    input_messages = list(prior) + [{"role": "user", "content": user_input}]
     request_kwargs: dict[str, Any] = {
         "model": model,
-        "text": {"format": {"type": "json_object"}},
         "input": input_messages,
     }
     if system_prompt:
@@ -196,7 +192,6 @@ def _generate_anthropic(
 ) -> LLMResult:
     client = anthropic.Anthropic(api_key=api_key)
 
-    user_content_for_api = user_input + _JSON_HINT_SUFFIX
     prior = list(prior_messages or [])
 
     # Traza persistida: replica la forma de OpenAI (system como primer mensaje).
@@ -204,10 +199,10 @@ def _generate_anthropic(
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
     messages.extend(prior)
-    messages.append({"role": "user", "content": user_content_for_api})
+    messages.append({"role": "user", "content": user_input})
 
     # La Messages API de Anthropic toma el system aparte y solo roles user/assistant.
-    api_messages = list(prior) + [{"role": "user", "content": user_content_for_api}]
+    api_messages = list(prior) + [{"role": "user", "content": user_input}]
 
     raw_text = ""
     api_error: str | None = None
@@ -260,7 +255,6 @@ def _generate_google(
 ) -> LLMResult:
     client = genai.Client(api_key=api_key)
 
-    user_content_for_api = user_input + _JSON_HINT_SUFFIX
     prior = list(prior_messages or [])
 
     # Traza persistida: misma forma que los otros proveedores.
@@ -268,14 +262,13 @@ def _generate_google(
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
     messages.extend(prior)
-    messages.append({"role": "user", "content": user_content_for_api})
+    messages.append({"role": "user", "content": user_input})
 
     # Gemini usa roles "user"/"model" y estructura contents[].parts[].
     contents = [_to_gemini_content(m) for m in prior]
-    contents.append(_to_gemini_content({"role": "user", "content": user_content_for_api}))
+    contents.append(_to_gemini_content({"role": "user", "content": user_input}))
 
     gen_config = genai_types.GenerateContentConfig(
-        response_mime_type="application/json",
         max_output_tokens=_MAX_OUTPUT_TOKENS,
         system_instruction=system_prompt or None,
     )

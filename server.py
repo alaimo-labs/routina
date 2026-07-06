@@ -244,14 +244,15 @@ def chat_generate(req: ChatGenerateRequest) -> dict[str, Any]:
     finally:
         conn.close()
 
-    result = llm.generate_routine(
-        provider=provider,
-        api_key=api_key,
-        model=req.model,
-        user_input=req.user_input,
-        system_prompt=req.system_prompt,
-        prior_messages=prior_messages,
-    )
+    with verica.conversation(f"routina-chat-{chat_id}"):
+        result = llm.generate_routine(
+            provider=provider,
+            api_key=api_key,
+            model=req.model,
+            user_input=req.user_input,
+            system_prompt=req.system_prompt,
+            prior_messages=prior_messages,
+        )
 
     run_id, status, schema_errors = _validate_and_persist_run(
         req=req, result=result, chat_id=chat_id

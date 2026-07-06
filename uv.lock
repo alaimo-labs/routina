@@ -1325,7 +1325,7 @@ wheels = [
 
 [[package]]
 name = "verica-observability"
-version = "0.1.4"
+version = "0.1.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "opentelemetry-exporter-otlp-proto-http" },
@@ -1334,9 +1334,9 @@ dependencies = [
     { name = "opentelemetry-instrumentation-openai" },
     { name = "opentelemetry-sdk" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/af/2c/29a4c7a696b0ea9d13532e631c4437ac21bded1c8d19c677b666bf8a733c/verica_observability-0.1.4.tar.gz", hash = "sha256:e120e8074a7cedb03c256c65cc12d44c616e34c187597d8d039d728658c3a7f1", size = 4983, upload-time = "2026-07-03T21:26:31.745Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/44/c805e32d97080e2a2ac208b7c95ebef9e7fc4af4b7a17ee5c04a995ba7df/verica_observability-0.1.5.tar.gz", hash = "sha256:0e34896e52f1c691dfcbe86c4ac80114534686aaec7db77238090cfb686eb6cc", size = 6430, upload-time = "2026-07-06T04:44:06.186Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/5a/10d988caf8b30e468fe30a40a475c2a045429b615eca2d3aa23e30886b79/verica_observability-0.1.4-py3-none-any.whl", hash = "sha256:934511e5f2494d260152e9a06b8ffff4f9fab008ddb0ca7a09aa9c617dce31c1", size = 4462, upload-time = "2026-07-03T21:26:31.001Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/5e/6087ad03f1ecc580131ce3f86d18a6668038bbf1ab7baa1405d2df8db5de/verica_observability-0.1.5-py3-none-any.whl", hash = "sha256:01a98694c8479b9719fa44071047cccd5247dc7e6cff8b78206c550873f151a6", size = 5280, upload-time = "2026-07-06T04:44:05.383Z" },
 ]
 
 [[package]]
