@@ -147,13 +147,13 @@ Después abre tu navegador en `http://localhost:8000`. Listo.
 
 La app expone tres "modos" como rutas distintas, alineadas con la progresión del programa de evals (cada una representa un escope de evaluación distinto):
 
-- **`/` Rutinas (one-shot)** — biblioteca de rutinas guardadas con un botón **"+ Nueva rutina"** que abre un modal. Escribes el caso, generás la rutina y decidís si guardarla o descartarla. Cada generación es independiente, sin contexto previo. Es el modo más simple para evaluar calidad de salida pura.
-- **`/chat` Chat (multi-turno)** — conversación al estilo ChatGPT/Claude. Cada turno se acumula en el contexto del LLM, así podés refinar (_"hacela más corta"_, _"cambiá el formato a HIIT"_). El historial de chats persiste en la barra lateral. Pensado para evaluar coherencia conversacional.
+- **`/` Rutinas (one-shot)** — biblioteca de rutinas guardadas con un botón **"+ Nueva rutina"** que abre un modal. Escribes el caso, generas la rutina y decides si guardarla o descartarla. Cada generación es independiente, sin contexto previo. Es el modo más simple para evaluar calidad de salida pura.
+- **`/chat` Chat (multi-turno)** — conversación al estilo ChatGPT/Claude. Cada turno se acumula en el contexto del LLM, así puedes refinar (_"hazla más corta"_, _"cambia el formato a HIIT"_). El modelo decide en cada turno si responde con un mensaje conversacional (para preguntar o aclarar) o con una rutina; ambos son JSON con la forma `{"tipo": "mensaje" | "rutina", ...}`. El historial de chats persiste en la barra lateral. Pensado para evaluar coherencia conversacional y la decisión mensaje-vs-rutina.
 - **`/agent` Agente** — placeholder por ahora. Vendrá en encuentros futuros del curso con tool calling, RAG y loop multi-step.
 
 Adicionalmente hay **`/historial`**: la traza completa de evals — toda corrida (one-shot o chat, exitosa o fallida) queda registrada con su input, prompt, respuesta cruda, errores y mensajes de la traza.
 
-**Configuración** (botón al pie de la barra lateral): eliges el modelo (agrupado por proveedor: OpenAI, Anthropic, Google) y editas el system prompt. La app rutea cada modelo al proveedor correcto según su API key.
+**Configuración** (botón al pie de la barra lateral): eliges el modelo (agrupado por proveedor: OpenAI, Anthropic, Google) y editas los system prompts — hay uno por modo: one-shot y chat, cada uno se abre en un editor a pantalla casi completa con su botón para restaurar el default. La app rutea cada modelo al proveedor correcto según su API key.
 
 **Validación de salida**: la app valida cada respuesta del LLM en tres capas (parseo JSON, conformidad con el schema, contenido) y te muestra cada resultado por separado — útil para razonar sobre dónde falla.
 
@@ -193,12 +193,14 @@ routina/
 ├── src/routina/
 │   ├── config.py               # Rutas y carga de .env
 │   ├── db.py                   # SQLite: chats, runs, routines
-│   ├── llm.py                  # Wrapper de la API de OpenAI (Responses)
+│   ├── llm.py                  # Capa multi-proveedor (OpenAI, Anthropic, Google)
 │   └── validate.py             # Validación contra el JSON Schema
 ├── prompts/
-│   └── routina_default.txt     # System prompt por defecto
+│   ├── routina_oneshot.txt     # System prompt por defecto del modo one-shot
+│   └── routina_chat.txt        # System prompt por defecto del modo chat
 ├── schemas/
-│   └── routina_v1.json         # JSON Schema de la rutina
+│   ├── routina_v1.json         # JSON Schema de la rutina (one-shot)
+│   └── chat_v1.json            # JSON Schema del sobre de chat (mensaje | rutina)
 └── data/                       # SQLite (se crea solo, no se versiona)
 ```
 
@@ -206,7 +208,7 @@ La base de datos vive en `data/routina.db`. Si quieres inspeccionarla a mano, pu
 
 ## API HTTP
 
-El frontend es una SPA estática que habla con FastAPI vía estos endpoints (útil si querés correr scripts de eval contra el mismo backend):
+El frontend es una SPA estática que habla con FastAPI vía estos endpoints (útil si quieres correr scripts de eval contra el mismo backend):
 
 | Método   | Path                    | Propósito                                                                |
 | -------- | ----------------------- | ------------------------------------------------------------------------ |
@@ -220,8 +222,8 @@ El frontend es una SPA estática que habla con FastAPI vía estos endpoints (út
 | `POST`   | `/api/routines`         | Body `{run_id}`. Guarda como rutina el output del run                    |
 | `GET`    | `/api/routines`         | Lista de rutinas guardadas (filtros: `objetivo`, `formato`)              |
 | `GET`    | `/api/config`           | Modelos disponibles (con proveedor), default, qué proveedores tienen key |
-| `GET`    | `/api/system-prompt`    | El system prompt por defecto (texto plano)                               |
-| `GET`    | `/api/schema`           | El JSON Schema activo                                                    |
+| `GET`    | `/api/system-prompt`    | Los system prompts por defecto, uno por modo (`{oneshot, chat}`)         |
+| `GET`    | `/api/schema?mode=...`  | El JSON Schema del modo (`oneshot` o `chat`; default `oneshot`)          |
 
 ---
 

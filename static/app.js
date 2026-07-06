@@ -65,11 +65,13 @@ const state = {
     isGenerating: false,
     settings: {
         model: '',
-        systemPrompt: '',
+        systemPromptOneshot: '',
+        systemPromptChat: '',
     },
     routinesFilter: { objetivo: '', formato: '' },
     runsFilter: { status: '' },
     drawerOpen: false,
+    promptModalMode: null,   // 'oneshot' | 'chat' mientras el editor de prompt está abierto
     sidebarCollapsed: localStorage.getItem('routina:sidebar-collapsed') === '1',
     theme: localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light',
     oneshot: { lastRunId: null, isSaved: false },
@@ -108,9 +110,10 @@ const api = {
         if (!r.ok) throw new Error('No pude leer config');
         return r.json();
     },
-    async getSystemPrompt() {
+    async getSystemPrompts() {
+        // Devuelve { oneshot: "...", chat: "..." } — un prompt default por modo.
         const r = await fetch('/api/system-prompt');
-        return (await r.json()).text;
+        return r.json();
     },
     async oneshotGenerate(body) {
         const r = await fetch('/api/oneshot/generate', {
@@ -473,7 +476,7 @@ function renderChatMessages() {
             node.innerHTML = `
                 <div class="assistant-card loading">
                     <div class="dots"><span></span><span></span><span></span></div>
-                    <span>Armando tu rutina…</span>
+                    <span>Pensando…</span>
                 </div>
             `;
             messages.appendChild(node);
@@ -537,21 +540,24 @@ function renderAssistantMessage(run) {
             </details>
         `;
     } else if (run.status === 'ok') {
-        cardHtml = renderRoutineHTML(run.parsed);
-        const savedAttr = run._saved ? 'disabled' : '';
-        const savedLabel = run._saved
-            ? `<span>✓ Guardada</span>`
-            : `<span>Guardar →</span>`;
-        actionsHtml = `
-            <div class="assistant-card-actions">
-                <button class="btn btn-primary" data-save-run="${run.run_id}" ${savedAttr}>${savedLabel}</button>
-                <span class="meta-chips">
-                    <span>${run.latency_ms} ms</span>
-                    <span>· ${run.input_tokens ?? '—'} / ${run.output_tokens ?? '—'} tokens</span>
-                    <span>· ${escapeHtml(run.model)}</span>
-                </span>
-            </div>
-        `;
+        // La respuesta de chat es un sobre { tipo: "rutina"|"mensaje", ... }.
+        // La telemetría del run (latencia, tokens, modelo) vive en /historial, no acá.
+        const parsed = run.parsed || {};
+        if (parsed.tipo === 'mensaje') {
+            cardHtml = `<div class="assistant-text">${escapeHtml(parsed.mensaje || '')}</div>`;
+        } else {
+            const rutina = parsed.tipo === 'rutina' ? parsed.rutina : parsed;
+            cardHtml = renderRoutineHTML(rutina || {});
+            const savedAttr = run._saved ? 'disabled' : '';
+            const savedLabel = run._saved
+                ? `<span>✓ Guardada</span>`
+                : `<span>Guardar →</span>`;
+            actionsHtml = `
+                <div class="assistant-card-actions">
+                    <button class="btn btn-primary" data-save-run="${run.run_id}" ${savedAttr}>${savedLabel}</button>
+                </div>
+            `;
+        }
     }
 
     wrap.innerHTML = `<div class="${cardClass}">${cardHtml}${actionsHtml}</div>`;
@@ -714,9 +720,10 @@ function renderRoute() {
 }
 
 // -------------------- Modales --------------------
-function openModal(title, bodyHtml) {
+function openModal(title, bodyHtml, panelClass = '', titleBadgeHtml = '') {
     const modal = document.getElementById('modal');
-    document.getElementById('modal-title').textContent = title;
+    modal.querySelector('.modal-panel').className = 'modal-panel' + (panelClass ? ' ' + panelClass : '');
+    document.getElementById('modal-title').innerHTML = escapeHtml(title) + (titleBadgeHtml || '');
     document.getElementById('modal-body').innerHTML = bodyHtml;
     replaceIcons(document.getElementById('modal-body'));
     modal.hidden = false;
@@ -738,6 +745,7 @@ async function openRunModal(id) {
             <button class="run-tab" data-tab="response">Respuesta</button>
             <button class="run-tab" data-tab="errors">Errores</button>
             <button class="run-tab" data-tab="trace">Traza</button>
+            <button class="run-tab" data-tab="details">Detalles</button>
         </div>
     `;
     const inputPane = `<div data-pane="input"><div class="code-block">${escapeHtml(data.user_input || '(vacío)')}</div></div>`;
@@ -761,18 +769,32 @@ async function openRunModal(id) {
     const tracePane = `<div data-pane="trace" hidden>
         <div class="code-block">${escapeHtml(JSON.stringify(data.messages, null, 2))}</div>
     </div>`;
-
-    const headerInfo = `
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
-            ${statusPillHtml(data.status)}
-            ${neutralPillHtml(data.provider || 'openai')}
-            ${neutralPillHtml(data.model)}
-            <span style="color:var(--text-muted);font-size:.82rem;">${relativeTime(data.created_at)}</span>
-            <span style="color:var(--text-muted);font-size:.82rem;display:inline-flex;gap:4px;align-items:center;">${icon('timer', 12)} ${data.latency_ms ?? '—'} ms</span>
+    const detailRows = [
+        ['Proveedor', data.provider || 'openai'],
+        ['Modelo', data.model],
+        ['Fecha', relativeTime(data.created_at)],
+        ['Latencia', `${data.latency_ms ?? '—'} ms`],
+        ['Tokens input', data.input_tokens ?? '—'],
+        ['Tokens output', data.output_tokens ?? '—'],
+    ];
+    const detailsPane = `<div data-pane="details" hidden>
+        <div class="run-detail-grid">
+            ${detailRows.map(([k, v]) => `
+                <div class="run-detail-row">
+                    <span class="k">${escapeHtml(k)}</span>
+                    <span class="v">${escapeHtml(String(v))}</span>
+                </div>
+            `).join('')}
         </div>
-    `;
+    </div>`;
 
-    openModal(`Run #${data.id}`, headerInfo + tabsBar + inputPane + promptPane + responsePane + errorsPane + tracePane);
+    // Alto fijo: al cambiar de pestaña el panel no hace shift según el contenido.
+    openModal(
+        `Run #${data.id}`,
+        tabsBar + inputPane + promptPane + responsePane + errorsPane + tracePane + detailsPane,
+        'modal-panel--run',
+        statusPillHtml(data.status),
+    );
 }
 
 // -------------------- Modal one-shot ("+ Nueva rutina") --------------------
@@ -818,7 +840,7 @@ async function runOneshotGenerate() {
     const body = {
         user_input: text,
         model: state.settings.model,
-        system_prompt: state.settings.systemPrompt,
+        system_prompt: state.settings.systemPromptOneshot,
     };
 
     try {
@@ -849,11 +871,6 @@ function renderOneshotResult(result) {
                 </button>
                 <button class="btn btn-outline" id="oneshot-discard-btn">Descartar</button>
                 <button class="btn btn-ghost" id="oneshot-regenerate-btn">Otra rutina</button>
-                <span class="meta-chips">
-                    <span>${icon('timer', 13)} ${result.latency_ms} ms</span>
-                    <span>${icon('arrow-up-down', 13)} ${result.input_tokens ?? '—'} / ${result.output_tokens ?? '—'} tokens</span>
-                    <span>${icon('cpu', 13)} ${escapeHtml(result.model)}</span>
-                </span>
             </div>
         `;
     } else if (result.status === 'parse_error') {
@@ -1002,7 +1019,7 @@ async function chatSend() {
     const body = {
         user_input: text,
         model: state.settings.model,
-        system_prompt: state.settings.systemPrompt,
+        system_prompt: state.settings.systemPromptChat,
         chat_id: state.currentChatId,
     };
 
@@ -1077,8 +1094,8 @@ function openDrawer() {
 
     refreshApiKeyStatus();
 
-    document.getElementById('system-prompt-input').value = state.settings.systemPrompt;
-    document.getElementById('schema-path').textContent = state.config.schema_path;
+    document.getElementById('schema-path-oneshot').textContent = state.config.schema_paths?.oneshot || '…';
+    document.getElementById('schema-path-chat').textContent = state.config.schema_paths?.chat || '…';
 }
 // El estado de la API key es el del proveedor del modelo seleccionado.
 function refreshApiKeyStatus() {
@@ -1104,8 +1121,74 @@ function refreshApiKeyStatus() {
 function closeDrawer() { state.drawerOpen = false; document.getElementById('settings-drawer').hidden = true; }
 function commitSettingsFromDOM() {
     state.settings.model = document.getElementById('model-select').value;
-    state.settings.systemPrompt = document.getElementById('system-prompt-input').value;
     saveSettings();
+}
+
+// -------------------- Modal editor de system prompt --------------------
+const PROMPT_MODE_META = {
+    oneshot: { settingsKey: 'systemPromptOneshot', title: 'System prompt · One-shot' },
+    chat: { settingsKey: 'systemPromptChat', title: 'System prompt · Chat' },
+};
+
+function openPromptModal(mode) {
+    const meta = PROMPT_MODE_META[mode];
+    if (!meta) return;
+    state.promptModalMode = mode;
+    document.getElementById('prompt-modal-title').textContent = meta.title;
+    const ta = document.getElementById('prompt-modal-textarea');
+    ta.value = state.settings[meta.settingsKey];
+    document.getElementById('prompt-modal').hidden = false;
+    setTimeout(() => {
+        ta.focus();
+        ta.setSelectionRange(0, 0);
+        ta.scrollTop = 0;
+    }, 50);
+}
+
+function hidePromptModal() {
+    state.promptModalMode = null;
+    document.getElementById('prompt-modal').hidden = true;
+}
+
+// El textarea es un borrador: no toca settings hasta "Guardar". Cerrar/cancelar descarta,
+// con confirmación si hay cambios sin guardar.
+async function cancelPromptModal() {
+    const meta = PROMPT_MODE_META[state.promptModalMode];
+    if (!meta) return;
+    const draft = document.getElementById('prompt-modal-textarea').value;
+    if (draft !== state.settings[meta.settingsKey]) {
+        const ok = await confirmDialog({
+            title: 'Descartar cambios',
+            message: 'Hay cambios sin guardar en el system prompt. ¿Quieres descartarlos?',
+            okLabel: 'Descartar',
+            cancelLabel: 'Seguir editando',
+        });
+        if (!ok) return;
+    }
+    hidePromptModal();
+}
+
+function savePromptModal() {
+    const meta = PROMPT_MODE_META[state.promptModalMode];
+    if (!meta) return;
+    state.settings[meta.settingsKey] = document.getElementById('prompt-modal-textarea').value;
+    saveSettings();
+    hidePromptModal();
+    showToast('System prompt guardado');
+}
+
+async function restorePromptDefault() {
+    const mode = state.promptModalMode;
+    const meta = PROMPT_MODE_META[mode];
+    if (!meta) return;
+    const ok = await confirmDialog({
+        title: 'Restaurar default',
+        message: 'Esto reemplaza el contenido del editor por la versión por defecto. Se aplica recién al guardar.',
+        okLabel: 'Restaurar',
+    });
+    if (!ok) return;
+    const prompts = await api.getSystemPrompts();
+    document.getElementById('prompt-modal-textarea').value = prompts[mode] || '';
 }
 
 // -------------------- Sidebar collapse --------------------
@@ -1166,19 +1249,9 @@ function bindEvents() {
             toggleTheme();
         } else if (ev.target.closest('#reset-all-btn')) {
             resetAll();
-        } else if (ev.target.id === 'restore-prompt') {
-            (async () => {
-                const ok = await confirmDialog({
-                    title: 'Restaurar default',
-                    message: 'Esto reemplaza el System Prompt actual por la versión por defecto. La acción no se puede deshacer.',
-                    okLabel: 'Restaurar',
-                });
-                if (!ok) return;
-                const text = await api.getSystemPrompt();
-                state.settings.systemPrompt = text;
-                document.getElementById('system-prompt-input').value = text;
-                saveSettings();
-            })();
+        } else {
+            const promptBtn = ev.target.closest('[data-open-prompt]');
+            if (promptBtn) openPromptModal(promptBtn.dataset.openPrompt);
         }
     });
     document.getElementById('model-select').addEventListener('change', (ev) => {
@@ -1186,7 +1259,18 @@ function bindEvents() {
         saveSettings();
         refreshApiKeyStatus();
     });
-    document.getElementById('system-prompt-input').addEventListener('input', commitSettingsFromDOM);
+
+    // Modal editor de system prompt
+    document.getElementById('prompt-modal').addEventListener('click', (ev) => {
+        if (ev.target.matches('[data-close-prompt-modal]') || ev.target.closest('[data-close-prompt-modal]')
+            || ev.target.closest('#prompt-modal-cancel')) {
+            cancelPromptModal();
+        } else if (ev.target.closest('#prompt-modal-save')) {
+            savePromptModal();
+        } else if (ev.target.id === 'prompt-modal-restore') {
+            restorePromptDefault();
+        }
+    });
 
     // Composer (/chat)
     const chatInput = document.getElementById('chat-input');
@@ -1301,7 +1385,8 @@ function bindEvents() {
     // Escape
     document.addEventListener('keydown', (ev) => {
         if (ev.key === 'Escape') {
-            if (!document.getElementById('about-modal').hidden) closeAboutModal();
+            if (!document.getElementById('prompt-modal').hidden) cancelPromptModal();
+            else if (!document.getElementById('about-modal').hidden) closeAboutModal();
             else if (!document.getElementById('oneshot-modal').hidden) closeOneshotModal();
             else if (!document.getElementById('modal').hidden) closeModal();
             else if (state.drawerOpen) { commitSettingsFromDOM(); closeDrawer(); }
@@ -1318,17 +1403,19 @@ async function init() {
     try {
         state.config = await api.getConfig();
         const saved = loadSettings();
-        const defaultPrompt = await api.getSystemPrompt();
+        const defaultPrompts = await api.getSystemPrompts();
         const availableIds = (state.config.available_models || []).map(m => m.id);
         if (saved) {
             // Modelo: aceptar el guardado solo si sigue disponible.
             state.settings.model = availableIds.includes(saved.model)
                 ? saved.model
                 : state.config.default_model;
-            state.settings.systemPrompt = saved.systemPrompt || defaultPrompt;
+            state.settings.systemPromptOneshot = saved.systemPromptOneshot || defaultPrompts.oneshot;
+            state.settings.systemPromptChat = saved.systemPromptChat || defaultPrompts.chat;
         } else {
             state.settings.model = state.config.default_model;
-            state.settings.systemPrompt = defaultPrompt;
+            state.settings.systemPromptOneshot = defaultPrompts.oneshot;
+            state.settings.systemPromptChat = defaultPrompts.chat;
         }
         saveSettings();
     } catch (e) {

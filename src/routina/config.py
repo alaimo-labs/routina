@@ -8,8 +8,17 @@ DATA_DIR = ROOT / "data"
 DB_PATH = DATA_DIR / "routina.db"
 PROMPTS_DIR = ROOT / "prompts"
 SCHEMAS_DIR = ROOT / "schemas"
-DEFAULT_PROMPT_PATH = PROMPTS_DIR / "routina_default.txt"
-DEFAULT_SCHEMA_PATH = SCHEMAS_DIR / "routina_v1.json"
+# Cada modo de interacción tiene su propio system prompt y su propio schema de
+# respuesta. Cuando exista el modo agéntico, se suma acá como "agent".
+MODES = ("oneshot", "chat")
+PROMPT_PATHS = {
+    "oneshot": PROMPTS_DIR / "routina_oneshot.txt",
+    "chat": PROMPTS_DIR / "routina_chat.txt",
+}
+SCHEMA_PATHS = {
+    "oneshot": SCHEMAS_DIR / "routina_v1.json",
+    "chat": SCHEMAS_DIR / "chat_v1.json",
+}
 
 # Registro de modelos con su proveedor. El frontend arma el <select> a partir de
 # esto (agrupado por proveedor) y el backend rutea cada modelo al SDK correcto.
@@ -60,5 +69,14 @@ def ensure_data_dir() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def read_default_prompt() -> str:
-    return DEFAULT_PROMPT_PATH.read_text(encoding="utf-8")
+def read_default_prompt(mode: str) -> str:
+    return PROMPT_PATHS[mode].read_text(encoding="utf-8")
+
+
+def schema_path(mode: str):
+    return SCHEMA_PATHS[mode]
+
+
+def schema_rel_path(mode: str) -> str:
+    """Ruta del schema relativa a la raíz del repo (para persistir en runs y mostrar en UI)."""
+    return str(SCHEMA_PATHS[mode].relative_to(ROOT))

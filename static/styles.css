@@ -710,6 +710,11 @@ code {
     font-size: 12px;
     letter-spacing: 0.6px;
 }
+.msg-assistant .assistant-card .assistant-text {
+    white-space: pre-wrap;
+    line-height: 1.55;
+    font-size: .95rem;
+}
 .msg-assistant .assistant-card.error-card { border-color: var(--danger); border-left: 3px solid var(--danger); background: var(--danger-bg); }
 .msg-assistant .assistant-card.warning-card { border-color: var(--warn); border-left: 3px solid var(--warn); background: var(--warn-bg); }
 
@@ -907,23 +912,6 @@ code {
     flex-wrap: wrap;
     align-items: center;
 }
-.assistant-card-actions .meta-chips {
-    display: inline-flex;
-    gap: 14px;
-    color: var(--ink-muted);
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.6px;
-    flex-wrap: wrap;
-    align-items: center;
-    margin-left: auto;
-}
-.assistant-card-actions .meta-chips span {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-}
-
 /* ==================================================================================
    Buttons
    ================================================================================== */
@@ -1406,6 +1394,9 @@ code {
     font-size: 16px;
     font-weight: 500;
     letter-spacing: -0.2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 .modal-body {
     padding: 24px 28px 28px;
@@ -1583,6 +1574,81 @@ code {
    Oneshot modal
    ================================================================================== */
 .modal-panel--oneshot { max-width: 760px; }
+.modal-panel--run { height: min(720px, calc(100vh - 64px)); }
+.run-detail-grid {
+    display: flex;
+    flex-direction: column;
+}
+.run-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 24px;
+    padding: 12px 2px;
+    border-bottom: 1px solid var(--line-soft);
+}
+.run-detail-row .k {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+.run-detail-row .v { font-size: .92rem; }
+.modal-panel--prompt {
+    max-width: none;
+    width: calc(100vw - 64px);
+    height: calc(100vh - 64px);
+    max-height: none;
+}
+.prompt-modal-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.modal-body--prompt {
+    display: flex;
+    padding: 20px 24px 24px;
+}
+.prompt-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 24px;
+    border-top: 1px solid var(--line-soft);
+    flex-shrink: 0;
+}
+.prompt-modal-textarea {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    resize: none;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+}
+.prompt-btn-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.prompt-open-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font-size: .9rem;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color .15s ease, background .15s ease;
+}
+.prompt-open-btn:hover { border-color: var(--accent); }
+.prompt-open-arrow { color: var(--ink-soft); font-size: 1.05rem; }
 .modal-panel--confirm { max-width: 420px; }
 .modal-panel--about { max-width: 560px; }
 
@@ -1651,23 +1717,6 @@ code {
     flex-wrap: wrap;
     align-items: center;
 }
-.oneshot-result-actions .meta-chips {
-    display: inline-flex;
-    gap: 14px;
-    color: var(--ink-muted);
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.6px;
-    flex-wrap: wrap;
-    align-items: center;
-    margin-left: auto;
-}
-.oneshot-result-actions .meta-chips span {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-}
-
 /* ==================================================================================
    Responsive
    ================================================================================== */

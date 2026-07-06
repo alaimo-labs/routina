@@ -71,18 +71,21 @@ def get_config() -> dict[str, Any]:
         "default_model": config.DEFAULT_MODEL,
         "providers": config.providers_with_key(),
         "provider_envs": config.PROVIDER_ENV,
-        "schema_path": str(config.DEFAULT_SCHEMA_PATH.relative_to(config.ROOT)),
+        "schema_paths": {mode: config.schema_rel_path(mode) for mode in config.MODES},
     }
 
 
 @app.get("/api/system-prompt")
-def get_system_prompt() -> dict[str, str]:
-    return {"text": config.read_default_prompt()}
+def get_system_prompts() -> dict[str, str]:
+    """Prompts por defecto de cada modo (oneshot/chat)."""
+    return {mode: config.read_default_prompt(mode) for mode in config.MODES}
 
 
 @app.get("/api/schema")
-def get_schema() -> dict[str, Any]:
-    return validate.load_schema(config.DEFAULT_SCHEMA_PATH)
+def get_schema(mode: str = "oneshot") -> dict[str, Any]:
+    if mode not in config.MODES:
+        raise HTTPException(status_code=400, detail=f"Modo desconocido: {mode}")
+    return validate.load_schema(config.schema_path(mode))
 
 
 # ======================================================================================
@@ -124,9 +127,10 @@ def _validate_and_persist_run(
     req,
     result,
     chat_id: Optional[int],
+    mode: str,
 ) -> tuple[int, str, Optional[list[str]]]:
-    """Valida contra schema, decide status, persiste el run, devuelve (run_id, status, schema_errors)."""
-    schema_obj = validate.load_schema(config.DEFAULT_SCHEMA_PATH)
+    """Valida contra el schema del modo, decide status, persiste el run, devuelve (run_id, status, schema_errors)."""
+    schema_obj = validate.load_schema(config.schema_path(mode))
     schema_errors: Optional[list[str]] = None
     if result.parsed is not None:
         ok, errs = validate.validate_against_schema(result.parsed, schema_obj)
@@ -149,7 +153,7 @@ def _validate_and_persist_run(
             user_input=req.user_input,
             provider=config.provider_for(req.model),
             system_prompt=req.system_prompt,
-            schema_path=str(config.DEFAULT_SCHEMA_PATH.relative_to(config.ROOT)),
+            schema_path=config.schema_rel_path(mode),
             model=result.model,
             messages=result.messages,
             tool_calls=result.tool_calls or None,
@@ -199,7 +203,7 @@ def oneshot_generate(req: OneshotGenerateRequest) -> dict[str, Any]:
     )
 
     run_id, status, schema_errors = _validate_and_persist_run(
-        req=req, result=result, chat_id=None
+        req=req, result=result, chat_id=None, mode="oneshot"
     )
 
     return {
@@ -255,7 +259,7 @@ def chat_generate(req: ChatGenerateRequest) -> dict[str, Any]:
         )
 
     run_id, status, schema_errors = _validate_and_persist_run(
-        req=req, result=result, chat_id=chat_id
+        req=req, result=result, chat_id=chat_id, mode="chat"
     )
 
     return {
@@ -371,6 +375,14 @@ def save_routine(req: SaveRoutineRequest) -> dict[str, int]:
                 detail="El run no tiene un JSON válido para guardar como rutina.",
             )
         payload = json.loads(run["parsed_json"])
+        # Los runs de chat devuelven un sobre {tipo, rutina|mensaje}; se guarda solo la rutina.
+        if isinstance(payload, dict) and payload.get("tipo") == "rutina":
+            payload = payload.get("rutina") or {}
+        elif isinstance(payload, dict) and payload.get("tipo") == "mensaje":
+            raise HTTPException(
+                status_code=400,
+                detail="Este run es un mensaje conversacional, no tiene una rutina para guardar.",
+            )
         routine_id = db.insert_routine(conn, run_id=req.run_id, payload=payload)
         return {"routine_id": routine_id}
     finally:

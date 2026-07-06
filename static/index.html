@@ -215,16 +215,23 @@
 
                     <div id="prompt-local-config">
                         <div class="field">
-                            <div class="field-label-row">
-                                <label class="field-label" for="system-prompt-input">System prompt</label>
-                                <button class="text-btn" id="restore-prompt" type="button">Restaurar default (v0)</button>
+                            <span class="field-label">System prompts</span>
+                            <div class="prompt-btn-list">
+                                <button class="prompt-open-btn" data-open-prompt="oneshot" type="button">
+                                    <span>System prompt · One-shot</span>
+                                    <span class="prompt-open-arrow">›</span>
+                                </button>
+                                <button class="prompt-open-btn" data-open-prompt="chat" type="button">
+                                    <span>System prompt · Chat</span>
+                                    <span class="prompt-open-arrow">›</span>
+                                </button>
                             </div>
-                            <textarea id="system-prompt-input" class="textarea-input" rows="14"></textarea>
                         </div>
                     </div>
 
                     <div class="schema-info">
-                        Schema activo: <code id="schema-path">…</code>
+                        Schema one-shot: <code id="schema-path-oneshot">…</code><br>
+                        Schema chat: <code id="schema-path-chat">…</code>
                     </div>
 
                     <div class="danger-zone">
@@ -233,6 +240,29 @@
                         <button class="btn btn-danger" id="reset-all-btn" type="button">Borrar todo</button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ========================== Modal system prompt (editor grande) ========================== -->
+        <div class="modal" id="prompt-modal" hidden>
+            <div class="modal-overlay" data-close-prompt-modal></div>
+            <div class="modal-panel modal-panel--prompt">
+                <header class="modal-header">
+                    <h3 id="prompt-modal-title">System prompt</h3>
+                    <div class="prompt-modal-actions">
+                        <button class="text-btn" id="prompt-modal-restore" type="button">Restaurar default (v0)</button>
+                        <button class="icon-btn" data-close-prompt-modal type="button" aria-label="Cerrar">
+                            <span data-icon="x"></span>
+                        </button>
+                    </div>
+                </header>
+                <div class="modal-body modal-body--prompt">
+                    <textarea id="prompt-modal-textarea" class="textarea-input prompt-modal-textarea" spellcheck="false"></textarea>
+                </div>
+                <footer class="prompt-modal-footer">
+                    <button class="btn btn-outline" id="prompt-modal-cancel" type="button">Cancelar</button>
+                    <button class="btn btn-primary" id="prompt-modal-save" type="button">Guardar</button>
+                </footer>
             </div>
         </div>
 
