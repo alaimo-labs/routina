@@ -99,10 +99,12 @@ Abre **PowerShell** (botón inicio, escribe "PowerShell", Enter).
 Pega el siguiente texto y luego haz Enter:
 
 ```powershell
-irm https://astral.sh/uv/install.ps1 | iex
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
 Cierra y vuelve a abrir PowerShell después de que termine.
+
+> Si escribes solo `irm https://astral.sh/uv/install.ps1 | iex` y la ventana se cierra de golpe, es la política de ejecución de PowerShell bloqueando el script. El comando de arriba (con `-ExecutionPolicy ByPass`) evita justamente eso. Ver también "La ventana de PowerShell se cierra sola" más abajo.
 
 **2. Clonar el repositorio y entrar a la carpeta**:
 
@@ -169,6 +171,16 @@ Adicionalmente hay **`/historial`**: la traza completa de evals — toda corrida
 
 - macOS: ejecuta `xcode-select --install` y acepta.
 - Windows: descarga Git for Windows desde https://git-scm.com/download/win e instálalo.
+
+**La ventana de PowerShell se cierra sola al instalar `uv`**
+
+- Es la política de ejecución (execution policy) bloqueando el script descargado. Usa la forma con `ByPass`, que es la que recomienda uv para Windows:
+  ```powershell
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+  ```
+- Abre PowerShell **primero** (menú Inicio → "PowerShell" → Enter) y pega el comando ahí dentro; no lo corras por doble clic en un `.ps1` ni desde un acceso directo, porque esos cierran la ventana al terminar y no llegas a leer el error.
+- Si quieres ver el mensaje aunque se cierre, agrega `-NoExit` para mantener la ventana abierta: `powershell -NoExit -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`.
+- Como alternativa, puedes instalarlo con winget: `winget install --id=astral-sh.uv -e`.
 
 **"Falta la API key" aunque tengas `.env`**
 
