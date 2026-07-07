@@ -381,11 +381,12 @@ def agent_generate(req: ChatGenerateRequest) -> StreamingResponse:
             saved_routine_ids: list[int] = []
 
             def tool_executor(name: str, args: dict[str, Any]) -> dict[str, Any]:
-                return agent_tools.execute(
-                    name, args, saved_routine_ids=saved_routine_ids, lang=req.lang
-                )
+                with verica.tool(name):
+                    return agent_tools.execute(
+                        name, args, saved_routine_ids=saved_routine_ids, lang=req.lang
+                    )
 
-            with verica.conversation(f"routina-agent-{chat_id}"), verica.tags(["agent"]):
+            with verica.conversation(f"routina-agent-{chat_id}"), verica.tags(["agent"]), verica.span("agent.run"):
                 result = llm.run_agent(
                     provider=provider,
                     api_key=api_key,
