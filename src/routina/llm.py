@@ -32,7 +32,7 @@ class LLMResult:
     api_error: str | None = None
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     # Estado nativo del loop agéntico cuando quedó pausado esperando la respuesta
-    # del usuario (preguntar_usuario). El server lo persiste y lo devuelve en el
+    # del usuario (ask_user). El server lo persiste y lo devuelve en el
     # próximo turno para reanudar con un tool_result nativo. None = no hay pausa.
     pending_state: dict[str, Any] | None = None
 
@@ -46,6 +46,7 @@ def generate_routine(
     system_prompt: str | None = None,
     prior_messages: list[dict[str, Any]] | None = None,
     tools: list[dict[str, Any]] | None = None,
+    lang: str = "es",
 ) -> LLMResult:
     """
     Genera una rutina llamando al proveedor indicado y devuelve un LLMResult uniforme.
@@ -54,7 +55,8 @@ def generate_routine(
     user/assistant) van antes del nuevo `user_input`, dándole al LLM el contexto de
     la conversación. Ningún proveedor usa modo JSON del API: el formato se pide
     solo por prompting (system prompt), para que la validación en tres capas de la
-    app siga siendo observable y comparable entre proveedores.
+    app siga siendo observable y comparable entre proveedores. `lang` solo localiza
+    los mensajes de error visibles en la UI (parse_error, api_error inesperado).
     """
     if provider == "anthropic":
         return _generate_anthropic(
@@ -63,6 +65,7 @@ def generate_routine(
             user_input=user_input,
             system_prompt=system_prompt,
             prior_messages=prior_messages,
+            lang=lang,
         )
     if provider == "google":
         return _generate_google(
@@ -71,6 +74,7 @@ def generate_routine(
             user_input=user_input,
             system_prompt=system_prompt,
             prior_messages=prior_messages,
+            lang=lang,
         )
     return _generate_openai(
         api_key=api_key,
@@ -79,6 +83,7 @@ def generate_routine(
         system_prompt=system_prompt,
         prior_messages=prior_messages,
         tools=tools,
+        lang=lang,
     )
 
 
@@ -91,6 +96,7 @@ def _finalize(
     input_tokens: int | None,
     output_tokens: int | None,
     model: str,
+    lang: str = "es",
 ) -> LLMResult:
     """Parseo JSON común y armado del LLMResult para los tres proveedores."""
     parsed: dict[str, Any] | None = None
@@ -105,10 +111,18 @@ def _finalize(
         try:
             parsed = json.loads(text_to_parse)
             if not isinstance(parsed, dict):
-                parse_error = "El JSON devuelto no es un objeto en la raíz."
+                parse_error = (
+                    "El JSON devuelto no es un objeto en la raíz."
+                    if lang == "es"
+                    else "The returned JSON is not an object at the root."
+                )
                 parsed = None
         except json.JSONDecodeError as exc:
-            parse_error = f"JSON inválido en línea {exc.lineno}, columna {exc.colno}: {exc.msg}"
+            parse_error = (
+                f"JSON inválido en línea {exc.lineno}, columna {exc.colno}: {exc.msg}"
+                if lang == "es"
+                else f"Invalid JSON at line {exc.lineno}, column {exc.colno}: {exc.msg}"
+            )
 
     return LLMResult(
         messages=messages,
@@ -133,6 +147,7 @@ def _generate_openai(
     system_prompt: str | None,
     prior_messages: list[dict[str, Any]] | None,
     tools: list[dict[str, Any]] | None,
+    lang: str = "es",
 ) -> LLMResult:
     client = OpenAI(api_key=api_key)
 
@@ -183,6 +198,7 @@ def _generate_openai(
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         model=used_model,
+        lang=lang,
     )
 
 
@@ -193,6 +209,7 @@ def _generate_anthropic(
     user_input: str,
     system_prompt: str | None,
     prior_messages: list[dict[str, Any]] | None,
+    lang: str = "es",
 ) -> LLMResult:
     client = anthropic.Anthropic(api_key=api_key)
 
@@ -246,6 +263,7 @@ def _generate_anthropic(
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         model=used_model,
+        lang=lang,
     )
 
 
@@ -256,6 +274,7 @@ def _generate_google(
     user_input: str,
     system_prompt: str | None,
     prior_messages: list[dict[str, Any]] | None,
+    lang: str = "es",
 ) -> LLMResult:
     client = genai.Client(api_key=api_key)
 
@@ -308,6 +327,7 @@ def _generate_google(
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         model=used_model,
+        lang=lang,
     )
 
 
@@ -316,15 +336,15 @@ def _generate_google(
 # ======================================================================================
 # El loop llama al proveedor con tools; ejecuta las tools server-side vía
 # `tool_executor` y vuelve a llamar, hasta que el modelo responde texto (el sobre
-# JSON final) o llama a `preguntar_usuario`. En ese caso el loop se PAUSA: se
-# sintetiza el sobre {tipo: "preguntas", ...} para la UI y se captura el estado
-# nativo de la conversación (mensajes provider-native, todos dicts serializables)
-# en `pending_state`. El server lo persiste por chat, y cuando el usuario responde
+# JSON final) o llama a `ask_user`. En ese caso el loop se PAUSA: se sintetiza el
+# sobre {type: "questions", ...} para la UI y se captura el estado nativo de la
+# conversación (mensajes provider-native, todos dicts serializables) en
+# `pending_state`. El server lo persiste por chat, y cuando el usuario responde
 # se reanuda el loop entregando la respuesta como tool_result NATIVO del
-# preguntar_usuario — no como un mensaje user sintético.
+# ask_user — no como un mensaje user sintético.
 
 _MAX_AGENT_ITERATIONS = 8
-_USER_TOOL = "preguntar_usuario"
+_USER_TOOL = "ask_user"
 
 
 def run_agent(
@@ -339,6 +359,7 @@ def run_agent(
     tool_executor: Any,
     on_tool_start: Any = None,
     resume_state: dict[str, Any] | None = None,
+    lang: str = "es",
 ) -> LLMResult:
     """Corre el loop agéntico en el proveedor indicado y devuelve un LLMResult uniforme.
 
@@ -348,8 +369,8 @@ def run_agent(
     comenzar cada tool — lo usa el server para streamear progreso a la UI.
 
     Si `resume_state` viene (el `pending_state` de un run anterior pausado en
-    preguntar_usuario), el loop se reanuda desde la conversación nativa guardada
-    y `user_input` viaja como el tool_result de esa llamada, no como mensaje user.
+    ask_user), el loop se reanuda desde la conversación nativa guardada y
+    `user_input` viaja como el tool_result de esa llamada, no como mensaje user.
     """
     if provider == "anthropic":
         runner = _agent_anthropic
@@ -368,20 +389,20 @@ def run_agent(
         trace.append({"role": "system", "content": system_prompt})
     if resume_state:
         # La conversación previa del loop pausado (incluida la llamada a
-        # preguntar_usuario), tal como la sigue viendo el proveedor.
+        # ask_user), tal como la sigue viendo el proveedor.
         trace.extend(resume_state.get("trace_prefix") or [])
         trace.append(
             {
                 "role": "tool_result",
                 "name": _USER_TOOL,
-                "result": {"respuestas_del_usuario": user_input},
+                "result": {"user_answers": user_input},
             }
         )
     else:
         trace.extend(dict(m) for m in prior)
         trace.append({"role": "user", "content": user_input})
 
-    state = _AgentState(trace=trace, on_tool_start=on_tool_start)
+    state = _AgentState(trace=trace, on_tool_start=on_tool_start, lang=lang)
 
     def _executor_with_notify(name: str, args: dict[str, Any]) -> dict[str, Any]:
         state.notify(name)
@@ -413,6 +434,7 @@ def run_agent(
         input_tokens=state.input_tokens if state.iterations else None,
         output_tokens=state.output_tokens if state.iterations else None,
         model=state.used_model or model,
+        lang=lang,
     )
     result.num_turns = max(state.iterations, 1)
     result.tool_calls = state.tool_calls
@@ -431,6 +453,7 @@ class _AgentState:
     api_error: str | None = None
     on_tool_start: Any = None
     pending_state: dict[str, Any] | None = None
+    lang: str = "es"
 
     def add_usage(self, input_tokens: int | None, output_tokens: int | None) -> None:
         self.input_tokens += input_tokens or 0
@@ -455,19 +478,19 @@ class _AgentState:
 
 
 def _preguntas_terminal(state: _AgentState, args: dict[str, Any]) -> str:
-    """Sintetiza el sobre {tipo: preguntas} cuando el agente llama a preguntar_usuario.
+    """Sintetiza el sobre {type: questions} cuando el agente llama a ask_user.
 
     Además guarda en `pending_state` un snapshot de la traza neutral hasta la
-    llamada a preguntar_usuario inclusive ("trace_prefix"): el run reanudado lo
-    antepone a su propia traza, para que messages_json refleje la conversación
-    completa que el proveedor realmente ve al continuar el loop.
+    llamada a ask_user inclusive ("trace_prefix"): el run reanudado lo antepone a
+    su propia traza, para que messages_json refleje la conversación completa que
+    el proveedor realmente ve al continuar el loop.
     """
     state.notify(_USER_TOOL)
     args = json.loads(json.dumps(args, ensure_ascii=False, default=str))
-    envelope = {"tipo": "preguntas", "preguntas": args.get("preguntas", [])}
+    envelope = {"type": "questions", "questions": args.get("questions", [])}
 
     state.tool_calls.append(
-        {"name": _USER_TOOL, "args": args, "result": {"estado": "esperando_respuesta_del_usuario"}}
+        {"name": _USER_TOOL, "args": args, "result": {"status": "waiting_for_user_answer"}}
     )
     state.trace.append({"role": "tool_call", "name": _USER_TOOL, "args": args})
     if state.pending_state is not None:
@@ -475,7 +498,7 @@ def _preguntas_terminal(state: _AgentState, args: dict[str, Any]) -> str:
         prefix = [m for m in state.trace if m.get("role") != "system"]
         state.pending_state["trace_prefix"] = json.loads(json.dumps(prefix, ensure_ascii=False))
     state.trace.append(
-        {"role": "tool_result", "name": _USER_TOOL, "result": {"estado": "esperando_respuesta_del_usuario"}}
+        {"role": "tool_result", "name": _USER_TOOL, "result": {"status": "waiting_for_user_answer"}}
     )
     return json.dumps(envelope, ensure_ascii=False)
 
@@ -483,12 +506,14 @@ def _preguntas_terminal(state: _AgentState, args: dict[str, Any]) -> str:
 def _max_iter_error(state: _AgentState) -> str:
     state.api_error = (
         f"El agente superó el máximo de {_MAX_AGENT_ITERATIONS} iteraciones sin respuesta final."
+        if state.lang == "es"
+        else f"The agent exceeded the maximum of {_MAX_AGENT_ITERATIONS} iterations without a final answer."
     )
     return ""
 
 
 def _user_tool_result_payload(user_input: str) -> str:
-    return json.dumps({"respuestas_del_usuario": user_input}, ensure_ascii=False)
+    return json.dumps({"user_answers": user_input}, ensure_ascii=False)
 
 
 def _agent_openai(
@@ -515,7 +540,7 @@ def _agent_openai(
     ]
     if resume_state:
         # Reanudación: la respuesta del usuario viaja como function_call_output
-        # del preguntar_usuario pendiente, sobre la conversación nativa guardada.
+        # del ask_user pendiente, sobre la conversación nativa guardada.
         input_items: list[Any] = list(resume_state["native_messages"])
         input_items.append(
             {
@@ -598,7 +623,7 @@ def _agent_anthropic(
         for t in tools
     ]
     if resume_state:
-        # Reanudación: tool_result del preguntar_usuario pendiente. Si en el mismo
+        # Reanudación: tool_result del ask_user pendiente. Si en el mismo
         # turno hubo otras tools, sus resultados (ya ejecutados antes de la pausa)
         # van en el mismo mensaje user, como exige la API.
         api_messages: list[dict[str, Any]] = list(resume_state["native_messages"])
@@ -691,7 +716,7 @@ def _agent_google(
     declarations = []
     for t in tools:
         decl: dict[str, Any] = {"name": t["name"], "description": t["description"]}
-        # Gemini rechaza schemas de objeto sin propiedades (caso leer_perfil):
+        # Gemini rechaza schemas de objeto sin propiedades (caso read_profile):
         # se omite `parameters` y la tool queda sin argumentos.
         if t["parameters"].get("properties"):
             decl["parameters"] = t["parameters"]
@@ -703,7 +728,7 @@ def _agent_google(
         tools=[genai_types.Tool(function_declarations=declarations)],
     )
     if resume_state:
-        # Reanudación: function_response del preguntar_usuario pendiente (+ los
+        # Reanudación: function_response del ask_user pendiente (+ los
         # resultados de otras tools del mismo turno, si los hubo).
         contents: list[Any] = list(resume_state["native_messages"])
         parts = list(resume_state["pending"].get("partial_results") or [])
@@ -711,7 +736,7 @@ def _agent_google(
             {
                 "function_response": {
                     "name": _USER_TOOL,
-                    "response": {"result": {"respuestas_del_usuario": user_input}},
+                    "response": {"result": {"user_answers": user_input}},
                 }
             }
         )

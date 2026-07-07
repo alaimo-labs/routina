@@ -148,14 +148,16 @@ Después abre tu navegador en `http://localhost:8000`. Listo.
 La app expone tres "modos" como rutas distintas, alineadas con la progresión del programa de evals (cada una representa un escope de evaluación distinto):
 
 - **`/` Rutinas (one-shot)** — biblioteca de rutinas guardadas con un botón **"+ Nueva rutina"** que abre un modal. Escribes el caso, generas la rutina y decides si guardarla o descartarla. Cada generación es independiente, sin contexto previo. Es el modo más simple para evaluar calidad de salida pura.
-- **`/chat` Chat (multi-turno)** — conversación al estilo ChatGPT/Claude. Cada turno se acumula en el contexto del LLM, así puedes refinar (_"hazla más corta"_, _"cambia el formato a HIIT"_). El modelo decide en cada turno si responde con un mensaje conversacional (para preguntar o aclarar) o con una rutina; ambos son JSON con la forma `{"tipo": "mensaje" | "rutina", ...}`. El historial de chats persiste en la barra lateral. Pensado para evaluar coherencia conversacional y la decisión mensaje-vs-rutina.
+- **`/chat` Chat (multi-turno)** — conversación al estilo ChatGPT/Claude. Cada turno se acumula en el contexto del LLM, así puedes refinar (_"hazla más corta"_, _"cambia el formato a HIIT"_). El modelo decide en cada turno si responde con un mensaje conversacional (para preguntar o aclarar) o con una rutina; ambos son JSON con la forma `{"type": "message" | "routine", ...}`. El historial de chats persiste en la barra lateral. Pensado para evaluar coherencia conversacional y la decisión mensaje-vs-rutina.
 - **`/agent` Agente** — conversación con herramientas (tool calling). El agente lee tu perfil, busca en el catálogo curado de ejercicios, te hace preguntas con opciones (multiple choice), valida la rutina contra el schema antes de entregarla y puede guardarla en tu biblioteca. Cada tool que usa queda visible en la conversación como chips, y la traza completa (llamadas, argumentos y resultados) queda en el historial. Pensado para evaluar agentes: elección de tools, grounding en el catálogo y respeto del perfil.
 
 Adicionalmente hay **`/historial`**: la traza completa de evals — toda corrida (one-shot o chat, exitosa o fallida) queda registrada con su input, prompt, respuesta cruda, errores y mensajes de la traza.
 
 **Perfil** (botón al pie de la barra lateral): marcas con checkboxes tu equipamiento disponible y tus lesiones o molestias, más notas libres. El agente lo consulta al armar rutinas en el modo Agente (es la base de sus tools).
 
-**Configuración** (botón al pie de la barra lateral): eliges el modelo (agrupado por proveedor: OpenAI, Anthropic, Google) y editas los system prompts — hay uno por modo: one-shot y chat, cada uno se abre en un editor a pantalla casi completa con su botón para restaurar el default. La app rutea cada modelo al proveedor correcto según su API key.
+**Configuración** (botón al pie de la barra lateral): eliges el modelo (agrupado por proveedor: OpenAI, Anthropic, Google), el **idioma** (español o inglés: cambia los textos de la UI y el idioma de generación) y editas los system prompts — hay uno por modo (one-shot, chat, agente) y por idioma; cada uno se abre en un editor a pantalla casi completa con su botón para restaurar el default. La app rutea cada modelo al proveedor correcto según su API key.
+
+**Idiomas**: la app es bilingüe (español / inglés). El selector de Configuración cambia la UI y el idioma en el que genera el modelo. Las claves del JSON de las rutinas son siempre en inglés (`goal`, `exercises`, …) en ambos idiomas; lo que cambia es el contenido de los textos. Cada run registra el idioma con el que se generó.
 
 **Validación de salida**: la app valida cada respuesta del LLM en tres capas (parseo JSON, conformidad con el schema, contenido) y te muestra cada resultado por separado — útil para razonar sobre dónde falla.
 
@@ -200,15 +202,18 @@ routina/
 │   ├── catalog.py              # Búsqueda sobre el catálogo de ejercicios
 │   └── validate.py             # Validación contra el JSON Schema
 ├── catalog/
-│   └── ejercicios_v1.json      # Catálogo de ejercicios con vocabulario cerrado
+│   └── exercises_v1.json       # Catálogo de ejercicios (vocabulario cerrado, nombres/labels bilingües)
 ├── prompts/
-│   ├── routina_oneshot.txt     # System prompt por defecto del modo one-shot
-│   ├── routina_chat.txt        # System prompt por defecto del modo chat
-│   └── routina_agent.txt       # System prompt por defecto del modo agente
+│   ├── routina_oneshot_es.txt  # System prompt por defecto del modo one-shot (español)
+│   ├── routina_oneshot_en.txt  # System prompt por defecto del modo one-shot (inglés)
+│   ├── routina_chat_es.txt     # Ídem chat, por idioma
+│   ├── routina_chat_en.txt
+│   ├── routina_agent_es.txt    # Ídem agente, por idioma
+│   └── routina_agent_en.txt
 ├── schemas/
-│   ├── routina_v1.json         # JSON Schema de la rutina (one-shot)
-│   ├── chat_v1.json            # JSON Schema del sobre de chat (mensaje | rutina)
-│   └── agent_v1.json           # JSON Schema del sobre del agente (+ preguntas)
+│   ├── routina_v1.json         # JSON Schema de la rutina (one-shot; claves en inglés)
+│   ├── chat_v1.json            # JSON Schema del sobre de chat (message | routine)
+│   └── agent_v1.json           # JSON Schema del sobre del agente (+ questions)
 └── data/                       # SQLite (se crea solo, no se versiona)
 ```
 
@@ -228,14 +233,14 @@ El frontend es una SPA estática que habla con FastAPI vía estos endpoints (út
 | `DELETE` | `/api/chats/{id}`       | Borra un chat (las rutinas guardadas se mantienen)                       |
 | `GET`    | `/api/runs?status=...`  | Toda la traza de runs                                                    |
 | `GET`    | `/api/runs/{id}`        | Detalle de un run con messages, errores y respuesta cruda                |
-| `POST`   | `/api/routines`         | Body `{run_id}`. Guarda como rutina el output del run                    |
-| `GET`    | `/api/routines`         | Lista de rutinas guardadas (filtros: `objetivo`, `formato`)              |
-| `GET`    | `/api/profile`          | Perfil del usuario (equipamiento, lesiones, notas) + vocabulario         |
+| `POST`   | `/api/routines`         | Body `{run_id, lang?}`. Guarda como rutina el output del run             |
+| `GET`    | `/api/routines`         | Lista de rutinas guardadas (filtros: `goal`, `format`)                   |
+| `GET`    | `/api/profile`          | Perfil del usuario (`equipment`, `injuries`, `notes`) + vocabulario bilingüe |
 | `PUT`    | `/api/profile`          | Guarda el perfil (valida los IDs contra el vocabulario del catálogo)     |
-| `GET`    | `/api/catalog`          | Catálogo de ejercicios; filtros: `grupo`, `nivel`, `equipamiento`, `evitar_lesiones` |
-| `GET`    | `/api/config`           | Modelos disponibles (con proveedor), default, qué proveedores tienen key |
-| `GET`    | `/api/system-prompt`    | Los system prompts por defecto, uno por modo (`{oneshot, chat}`)         |
-| `GET`    | `/api/schema?mode=...`  | El JSON Schema del modo (`oneshot` o `chat`; default `oneshot`)          |
+| `GET`    | `/api/catalog`          | Catálogo de ejercicios; filtros: `muscle_group`, `level`, `equipment`, `avoid_injuries` |
+| `GET`    | `/api/config`           | Modelos disponibles (con proveedor), default, idiomas, qué proveedores tienen key |
+| `GET`    | `/api/system-prompt`    | Los system prompts por defecto, por modo y por idioma (`{mode: {es, en}}`) |
+| `GET`    | `/api/schema?mode=...`  | El JSON Schema del modo (`oneshot`, `chat` o `agent`; default `oneshot`) |
 
 ---
 

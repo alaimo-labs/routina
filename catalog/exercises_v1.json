@@ -1,0 +1,917 @@
+{
+  "version": 1,
+  "equipment": [
+    {"id": "mat", "label": {"es": "Colchoneta", "en": "Mat"}},
+    {"id": "dumbbells", "label": {"es": "Mancuernas", "en": "Dumbbells"}},
+    {"id": "barbell", "label": {"es": "Barra y discos", "en": "Barbell and plates"}},
+    {"id": "bench", "label": {"es": "Banco", "en": "Bench"}},
+    {"id": "resistance_bands", "label": {"es": "Bandas elásticas", "en": "Resistance bands"}},
+    {"id": "kettlebell", "label": {"es": "Kettlebell", "en": "Kettlebell"}},
+    {"id": "pullup_bar", "label": {"es": "Barra de dominadas", "en": "Pull-up bar"}},
+    {"id": "gym_machines", "label": {"es": "Máquinas de gimnasio", "en": "Gym machines"}},
+    {"id": "stationary_bike", "label": {"es": "Bicicleta fija", "en": "Stationary bike"}},
+    {"id": "treadmill", "label": {"es": "Cinta de correr", "en": "Treadmill"}},
+    {"id": "jump_rope", "label": {"es": "Soga de saltar", "en": "Jump rope"}}
+  ],
+  "injuries": [
+    {"id": "knee", "label": {"es": "Rodilla", "en": "Knee"}},
+    {"id": "ankle", "label": {"es": "Tobillo", "en": "Ankle"}},
+    {"id": "hip", "label": {"es": "Cadera", "en": "Hip"}},
+    {"id": "lower_back", "label": {"es": "Zona lumbar", "en": "Lower back"}},
+    {"id": "neck", "label": {"es": "Cuello / cervicales", "en": "Neck / cervical spine"}},
+    {"id": "shoulder", "label": {"es": "Hombro", "en": "Shoulder"}},
+    {"id": "elbow", "label": {"es": "Codo", "en": "Elbow"}},
+    {"id": "wrist", "label": {"es": "Muñeca", "en": "Wrist"}}
+  ],
+  "muscle_groups": [
+    {"id": "legs", "label": {"es": "Piernas", "en": "Legs"}},
+    {"id": "glutes", "label": {"es": "Glúteos", "en": "Glutes"}},
+    {"id": "chest", "label": {"es": "Pecho", "en": "Chest"}},
+    {"id": "back", "label": {"es": "Espalda", "en": "Back"}},
+    {"id": "shoulders", "label": {"es": "Hombros", "en": "Shoulders"}},
+    {"id": "biceps", "label": {"es": "Bíceps", "en": "Biceps"}},
+    {"id": "triceps", "label": {"es": "Tríceps", "en": "Triceps"}},
+    {"id": "core", "label": {"es": "Core", "en": "Core"}},
+    {"id": "cardio", "label": {"es": "Cardio", "en": "Cardio"}},
+    {"id": "mobility", "label": {"es": "Movilidad", "en": "Mobility"}}
+  ],
+  "levels": ["beginner", "intermediate", "advanced"],
+  "exercises": [
+    {
+      "id": "bodyweight_squat",
+      "name": {"es": "Sentadilla con peso corporal", "en": "Bodyweight squat"},
+      "muscle_groups": ["legs", "glutes"],
+      "equipment": [],
+      "level": "beginner",
+      "contraindicated_for": ["knee"],
+      "notes": {
+        "es": "Pies al ancho de hombros, baja hasta donde la técnica lo permita sin despegar talones.",
+        "en": "Feet shoulder-width apart, squat as deep as your technique allows without lifting your heels."
+      }
+    },
+    {
+      "id": "goblet_squat",
+      "name": {"es": "Sentadilla goblet", "en": "Goblet squat"},
+      "muscle_groups": ["legs", "glutes"],
+      "equipment": ["dumbbells"],
+      "level": "beginner",
+      "contraindicated_for": ["knee"],
+      "notes": {
+        "es": "Sostiene la mancuerna contra el pecho; ayuda a mantener el torso erguido.",
+        "en": "Hold the dumbbell against your chest; it helps keep your torso upright."
+      }
+    },
+    {
+      "id": "barbell_squat",
+      "name": {"es": "Sentadilla con barra", "en": "Barbell squat"},
+      "muscle_groups": ["legs", "glutes"],
+      "equipment": ["barbell"],
+      "level": "advanced",
+      "contraindicated_for": ["knee", "lower_back"],
+      "notes": {
+        "es": "Requiere buena movilidad de cadera y tobillo. Aprende la técnica sin peso primero.",
+        "en": "Requires good hip and ankle mobility. Learn the technique without weight first."
+      }
+    },
+    {
+      "id": "lunges",
+      "name": {"es": "Zancadas", "en": "Lunges"},
+      "muscle_groups": ["legs", "glutes"],
+      "equipment": [],
+      "level": "beginner",
+      "contraindicated_for": ["knee"],
+      "notes": {
+        "es": "Paso largo, rodilla trasera hacia el piso sin tocarlo. Alterna piernas.",
+        "en": "Take a long step, lower the back knee toward the floor without touching it. Alternate legs."
+      }
+    },
+    {
+      "id": "dumbbell_lunges",
+      "name": {"es": "Zancadas con mancuernas", "en": "Dumbbell lunges"},
+      "muscle_groups": ["legs", "glutes"],
+      "equipment": ["dumbbells"],
+      "level": "intermediate",
+      "contraindicated_for": ["knee"],
+      "notes": {
+        "es": "Mancuernas a los costados, torso erguido durante todo el recorrido.",
+        "en": "Dumbbells at your sides, torso upright through the whole movement."
+      }
+    },
+    {
+      "id": "bulgarian_split_squat",
+      "name": {"es": "Sentadilla búlgara", "en": "Bulgarian split squat"},
+      "muscle_groups": ["legs", "glutes"],
+      "equipment": ["bench"],
+      "level": "intermediate",
+      "contraindicated_for": ["knee"],
+      "notes": {
+        "es": "Pie trasero apoyado en el banco. Exige equilibrio; empieza sin peso.",
+        "en": "Rear foot resting on the bench. Demands balance; start without weight."
+      }
+    },
+    {
+      "id": "jump_squat",
+      "name": {"es": "Sentadilla con salto", "en": "Jump squat"},
+      "muscle_groups": ["legs", "cardio"],
+      "equipment": [],
+      "level": "intermediate",
+      "contraindicated_for": ["knee", "ankle"],
+      "notes": {
+        "es": "Aterriza suave con rodillas flexionadas. Alto impacto.",
+        "en": "Land softly with bent knees. High impact."
+      }
+    },
+    {
+      "id": "dumbbell_romanian_deadlift",
+      "name": {"es": "Peso muerto rumano con mancuernas", "en": "Dumbbell Romanian deadlift"},
+      "muscle_groups": ["legs", "glutes"],
+      "equipment": ["dumbbells"],
+      "level": "intermediate",
+      "contraindicated_for": ["lower_back"],
+      "notes": {
+        "es": "Bisagra de cadera con espalda neutra; las mancuernas bajan pegadas a las piernas.",
+        "en": "Hip hinge with a neutral spine; the dumbbells slide down close to your legs."
+      }
+    },
+    {
+      "id": "barbell_deadlift",
+      "name": {"es": "Peso muerto con barra", "en": "Barbell deadlift"},
+      "muscle_groups": ["legs", "glutes", "back"],
+      "equipment": ["barbell"],
+      "level": "advanced",
+      "contraindicated_for": ["lower_back"],
+      "notes": {
+        "es": "Técnica exigente: espalda neutra y barra pegada al cuerpo. Progresión gradual.",
+        "en": "Demanding technique: neutral spine and bar close to the body. Progress gradually."
+      }
+    },
+    {
+      "id": "glute_bridge",
+      "name": {"es": "Puente de glúteos", "en": "Glute bridge"},
+      "muscle_groups": ["glutes", "core"],
+      "equipment": ["mat"],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Aprieta glúteos arriba un segundo. Apto para casi cualquier condición.",
+        "en": "Squeeze your glutes at the top for a second. Suitable for almost any condition."
+      }
+    },
+    {
+      "id": "barbell_hip_thrust",
+      "name": {"es": "Hip thrust con barra", "en": "Barbell hip thrust"},
+      "muscle_groups": ["glutes"],
+      "equipment": ["barbell", "bench"],
+      "level": "intermediate",
+      "contraindicated_for": ["hip"],
+      "notes": {
+        "es": "Espalda alta apoyada en el banco, barra sobre la cadera. Extensión completa arriba.",
+        "en": "Upper back resting on the bench, bar over your hips. Full extension at the top."
+      }
+    },
+    {
+      "id": "leg_press",
+      "name": {"es": "Prensa de piernas", "en": "Leg press"},
+      "muscle_groups": ["legs", "glutes"],
+      "equipment": ["gym_machines"],
+      "level": "beginner",
+      "contraindicated_for": ["knee"],
+      "notes": {
+        "es": "No bloquees las rodillas al extender. Rango controlado.",
+        "en": "Don't lock your knees when extending. Controlled range."
+      }
+    },
+    {
+      "id": "machine_leg_extension",
+      "name": {"es": "Extensión de cuádriceps en máquina", "en": "Machine leg extension"},
+      "muscle_groups": ["legs"],
+      "equipment": ["gym_machines"],
+      "level": "beginner",
+      "contraindicated_for": ["knee"],
+      "notes": {
+        "es": "Movimiento aislado; sube controlado y baja lento.",
+        "en": "Isolation movement; lift with control and lower slowly."
+      }
+    },
+    {
+      "id": "machine_leg_curl",
+      "name": {"es": "Curl femoral en máquina", "en": "Machine leg curl"},
+      "muscle_groups": ["legs"],
+      "equipment": ["gym_machines"],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Aísla isquiotibiales. Evita arquear la zona lumbar.",
+        "en": "Isolates the hamstrings. Avoid arching your lower back."
+      }
+    },
+    {
+      "id": "calf_raises",
+      "name": {"es": "Elevación de talones", "en": "Calf raises"},
+      "muscle_groups": ["legs"],
+      "equipment": [],
+      "level": "beginner",
+      "contraindicated_for": ["ankle"],
+      "notes": {
+        "es": "De pie, sube a puntas de pie con pausa arriba. Puede hacerse en escalón.",
+        "en": "Standing, rise onto your toes with a pause at the top. Can be done on a step."
+      }
+    },
+    {
+      "id": "step_up",
+      "name": {"es": "Subida al banco (step up)", "en": "Step-up"},
+      "muscle_groups": ["legs", "glutes"],
+      "equipment": ["bench"],
+      "level": "beginner",
+      "contraindicated_for": ["knee"],
+      "notes": {
+        "es": "Empuja con la pierna de arriba, no con impulso de la de abajo.",
+        "en": "Drive with the top leg, not with momentum from the bottom one."
+      }
+    },
+    {
+      "id": "pushups",
+      "name": {"es": "Flexiones de brazos", "en": "Push-ups"},
+      "muscle_groups": ["chest", "triceps", "core"],
+      "equipment": [],
+      "level": "intermediate",
+      "contraindicated_for": ["wrist", "shoulder"],
+      "notes": {
+        "es": "Cuerpo alineado de cabeza a talones. Codos a unos 45° del torso.",
+        "en": "Body aligned from head to heels. Elbows at about 45° from your torso."
+      }
+    },
+    {
+      "id": "knee_pushups",
+      "name": {"es": "Flexiones con rodillas apoyadas", "en": "Knee push-ups"},
+      "muscle_groups": ["chest", "triceps"],
+      "equipment": ["mat"],
+      "level": "beginner",
+      "contraindicated_for": ["wrist"],
+      "notes": {
+        "es": "Variante accesible de la flexión; mantiene cadera alineada.",
+        "en": "Accessible push-up variation; keep your hips aligned."
+      }
+    },
+    {
+      "id": "incline_pushups",
+      "name": {"es": "Flexiones inclinadas (manos elevadas)", "en": "Incline push-ups (hands elevated)"},
+      "muscle_groups": ["chest", "triceps"],
+      "equipment": [],
+      "level": "beginner",
+      "contraindicated_for": ["wrist"],
+      "notes": {
+        "es": "Manos sobre banco, mesa o pared. Cuanto más alto el apoyo, más fácil.",
+        "en": "Hands on a bench, table or wall. The higher the support, the easier it gets."
+      }
+    },
+    {
+      "id": "dumbbell_bench_press",
+      "name": {"es": "Press de banca con mancuernas", "en": "Dumbbell bench press"},
+      "muscle_groups": ["chest", "triceps"],
+      "equipment": ["dumbbells", "bench"],
+      "level": "intermediate",
+      "contraindicated_for": ["shoulder"],
+      "notes": {
+        "es": "Baja controlado hasta la altura del pecho; mayor rango que con barra.",
+        "en": "Lower with control to chest height; greater range of motion than with a barbell."
+      }
+    },
+    {
+      "id": "barbell_bench_press",
+      "name": {"es": "Press de banca con barra", "en": "Barbell bench press"},
+      "muscle_groups": ["chest", "triceps"],
+      "equipment": ["barbell", "bench"],
+      "level": "advanced",
+      "contraindicated_for": ["shoulder"],
+      "notes": {
+        "es": "Idealmente con ayuda para sacar y devolver la barra en series pesadas.",
+        "en": "Ideally with a spotter to unrack and rerack the bar on heavy sets."
+      }
+    },
+    {
+      "id": "dumbbell_flyes",
+      "name": {"es": "Aperturas con mancuernas", "en": "Dumbbell flyes"},
+      "muscle_groups": ["chest"],
+      "equipment": ["dumbbells", "bench"],
+      "level": "intermediate",
+      "contraindicated_for": ["shoulder"],
+      "notes": {
+        "es": "Codos levemente flexionados; no bajes más allá de la línea del torso.",
+        "en": "Elbows slightly bent; don't lower past the line of your torso."
+      }
+    },
+    {
+      "id": "machine_chest_press",
+      "name": {"es": "Press de pecho en máquina", "en": "Machine chest press"},
+      "muscle_groups": ["chest", "triceps"],
+      "equipment": ["gym_machines"],
+      "level": "beginner",
+      "contraindicated_for": ["shoulder"],
+      "notes": {
+        "es": "Trayectoria guiada; buena opción para aprender el patrón de empuje.",
+        "en": "Guided path; a good option to learn the pushing pattern."
+      }
+    },
+    {
+      "id": "bench_dips",
+      "name": {"es": "Fondos en banco", "en": "Bench dips"},
+      "muscle_groups": ["triceps", "chest"],
+      "equipment": ["bench"],
+      "level": "intermediate",
+      "contraindicated_for": ["shoulder", "wrist"],
+      "notes": {
+        "es": "Baja solo hasta donde el hombro no moleste. Codos apuntando atrás.",
+        "en": "Only go as low as your shoulder allows without discomfort. Elbows pointing back."
+      }
+    },
+    {
+      "id": "one_arm_dumbbell_row",
+      "name": {"es": "Remo con mancuerna a un brazo", "en": "One-arm dumbbell row"},
+      "muscle_groups": ["back", "biceps"],
+      "equipment": ["dumbbells", "bench"],
+      "level": "beginner",
+      "contraindicated_for": ["lower_back"],
+      "notes": {
+        "es": "Rodilla y mano apoyadas en el banco; espalda neutra, lleva el codo hacia atrás.",
+        "en": "Knee and hand resting on the bench; neutral spine, drive the elbow back."
+      }
+    },
+    {
+      "id": "barbell_row",
+      "name": {"es": "Remo con barra", "en": "Barbell row"},
+      "muscle_groups": ["back", "biceps"],
+      "equipment": ["barbell"],
+      "level": "advanced",
+      "contraindicated_for": ["lower_back"],
+      "notes": {
+        "es": "Torso inclinado con espalda neutra; exige control lumbar constante.",
+        "en": "Torso hinged forward with a neutral spine; demands constant lower-back control."
+      }
+    },
+    {
+      "id": "band_row",
+      "name": {"es": "Remo con bandas", "en": "Band row"},
+      "muscle_groups": ["back", "biceps"],
+      "equipment": ["resistance_bands"],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Sentado con la banda en los pies o anclada. Aprieta omóplatos al final.",
+        "en": "Seated with the band around your feet or anchored. Squeeze your shoulder blades at the end."
+      }
+    },
+    {
+      "id": "pullups",
+      "name": {"es": "Dominadas", "en": "Pull-ups"},
+      "muscle_groups": ["back", "biceps"],
+      "equipment": ["pullup_bar"],
+      "level": "advanced",
+      "contraindicated_for": ["shoulder", "elbow"],
+      "notes": {
+        "es": "Rango completo: brazos extendidos abajo, mentón sobre la barra arriba.",
+        "en": "Full range: arms extended at the bottom, chin over the bar at the top."
+      }
+    },
+    {
+      "id": "band_assisted_pullups",
+      "name": {"es": "Dominadas asistidas con banda", "en": "Band-assisted pull-ups"},
+      "muscle_groups": ["back", "biceps"],
+      "equipment": ["pullup_bar", "resistance_bands"],
+      "level": "intermediate",
+      "contraindicated_for": ["shoulder"],
+      "notes": {
+        "es": "La banda en los pies o rodillas descuenta peso. Progresión hacia la dominada completa.",
+        "en": "The band under your feet or knees offsets body weight. A progression toward full pull-ups."
+      }
+    },
+    {
+      "id": "lat_pulldown",
+      "name": {"es": "Jalón al pecho", "en": "Lat pulldown"},
+      "muscle_groups": ["back", "biceps"],
+      "equipment": ["gym_machines"],
+      "level": "beginner",
+      "contraindicated_for": ["shoulder"],
+      "notes": {
+        "es": "Lleva la barra al pecho, no detrás de la nuca. Torso apenas inclinado atrás.",
+        "en": "Pull the bar to your chest, not behind your neck. Torso leaning back slightly."
+      }
+    },
+    {
+      "id": "machine_seated_row",
+      "name": {"es": "Remo sentado en máquina", "en": "Machine seated row"},
+      "muscle_groups": ["back", "biceps"],
+      "equipment": ["gym_machines"],
+      "level": "beginner",
+      "contraindicated_for": ["lower_back"],
+      "notes": {
+        "es": "Pecho apoyado o torso estable; evita balancearte para mover más peso.",
+        "en": "Chest supported or torso stable; avoid rocking to move more weight."
+      }
+    },
+    {
+      "id": "superman",
+      "name": {"es": "Superman", "en": "Superman"},
+      "muscle_groups": ["back", "core"],
+      "equipment": ["mat"],
+      "level": "beginner",
+      "contraindicated_for": ["lower_back"],
+      "notes": {
+        "es": "Boca abajo, eleva brazos y piernas unos centímetros con pausa breve.",
+        "en": "Lying face down, lift arms and legs a few centimeters with a brief pause."
+      }
+    },
+    {
+      "id": "band_face_pull",
+      "name": {"es": "Face pull con banda", "en": "Band face pull"},
+      "muscle_groups": ["shoulders", "back"],
+      "equipment": ["resistance_bands"],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Tira de la banda hacia la cara con codos altos. Excelente para postura y hombro sano.",
+        "en": "Pull the band toward your face with elbows high. Excellent for posture and shoulder health."
+      }
+    },
+    {
+      "id": "dumbbell_shoulder_press",
+      "name": {"es": "Press militar con mancuernas", "en": "Dumbbell shoulder press"},
+      "muscle_groups": ["shoulders", "triceps"],
+      "equipment": ["dumbbells"],
+      "level": "intermediate",
+      "contraindicated_for": ["shoulder", "neck"],
+      "notes": {
+        "es": "De pie o sentado, empuja vertical sin arquear la zona lumbar.",
+        "en": "Standing or seated, press straight up without arching your lower back."
+      }
+    },
+    {
+      "id": "barbell_overhead_press",
+      "name": {"es": "Press militar con barra", "en": "Barbell overhead press"},
+      "muscle_groups": ["shoulders", "triceps"],
+      "equipment": ["barbell"],
+      "level": "advanced",
+      "contraindicated_for": ["shoulder", "neck", "lower_back"],
+      "notes": {
+        "es": "Core firme para proteger la zona lumbar; la barra pasa cerca de la cara.",
+        "en": "Brace your core to protect the lower back; the bar travels close to your face."
+      }
+    },
+    {
+      "id": "lateral_raises",
+      "name": {"es": "Elevaciones laterales", "en": "Lateral raises"},
+      "muscle_groups": ["shoulders"],
+      "equipment": ["dumbbells"],
+      "level": "beginner",
+      "contraindicated_for": ["shoulder"],
+      "notes": {
+        "es": "Peso liviano, sube hasta la altura de hombros con codos apenas flexionados.",
+        "en": "Light weight, raise to shoulder height with elbows slightly bent."
+      }
+    },
+    {
+      "id": "reverse_flyes",
+      "name": {"es": "Pájaros (elevaciones posteriores)", "en": "Reverse flyes"},
+      "muscle_groups": ["shoulders", "back"],
+      "equipment": ["dumbbells"],
+      "level": "intermediate",
+      "contraindicated_for": ["shoulder"],
+      "notes": {
+        "es": "Torso inclinado, abre los brazos hacia los costados apretando omóplatos.",
+        "en": "Torso hinged forward, open your arms to the sides squeezing your shoulder blades."
+      }
+    },
+    {
+      "id": "band_shoulder_press",
+      "name": {"es": "Press de hombros con bandas", "en": "Band shoulder press"},
+      "muscle_groups": ["shoulders", "triceps"],
+      "equipment": ["resistance_bands"],
+      "level": "beginner",
+      "contraindicated_for": ["shoulder"],
+      "notes": {
+        "es": "Pisa la banda y empuja vertical. Resistencia progresiva y amable con la articulación.",
+        "en": "Step on the band and press straight up. Progressive resistance, gentle on the joint."
+      }
+    },
+    {
+      "id": "dumbbell_biceps_curl",
+      "name": {"es": "Curl de bíceps con mancuernas", "en": "Dumbbell biceps curl"},
+      "muscle_groups": ["biceps"],
+      "equipment": ["dumbbells"],
+      "level": "beginner",
+      "contraindicated_for": ["elbow"],
+      "notes": {
+        "es": "Codos pegados al torso; evita balancear el cuerpo.",
+        "en": "Elbows tucked to your torso; avoid swinging your body."
+      }
+    },
+    {
+      "id": "band_biceps_curl",
+      "name": {"es": "Curl de bíceps con bandas", "en": "Band biceps curl"},
+      "muscle_groups": ["biceps"],
+      "equipment": ["resistance_bands"],
+      "level": "beginner",
+      "contraindicated_for": ["elbow"],
+      "notes": {
+        "es": "Pisa la banda y flexiona; la tensión crece al final del recorrido.",
+        "en": "Step on the band and curl; tension increases toward the end of the range."
+      }
+    },
+    {
+      "id": "hammer_curl",
+      "name": {"es": "Curl martillo", "en": "Hammer curl"},
+      "muscle_groups": ["biceps"],
+      "equipment": ["dumbbells"],
+      "level": "beginner",
+      "contraindicated_for": ["elbow", "wrist"],
+      "notes": {
+        "es": "Agarre neutro (palmas enfrentadas); más amable con la muñeca que el curl clásico.",
+        "en": "Neutral grip (palms facing each other); gentler on the wrist than the classic curl."
+      }
+    },
+    {
+      "id": "band_triceps_extension",
+      "name": {"es": "Extensión de tríceps con banda", "en": "Band triceps extension"},
+      "muscle_groups": ["triceps"],
+      "equipment": ["resistance_bands"],
+      "level": "beginner",
+      "contraindicated_for": ["elbow"],
+      "notes": {
+        "es": "Banda anclada arriba; extiende los codos manteniéndolos fijos al costado.",
+        "en": "Band anchored overhead; extend your elbows keeping them fixed at your sides."
+      }
+    },
+    {
+      "id": "overhead_triceps_extension",
+      "name": {"es": "Extensión de tríceps trasnuca", "en": "Overhead triceps extension"},
+      "muscle_groups": ["triceps"],
+      "equipment": ["dumbbells"],
+      "level": "intermediate",
+      "contraindicated_for": ["elbow", "shoulder"],
+      "notes": {
+        "es": "Una mancuerna a dos manos por detrás de la cabeza; codos apuntando al techo.",
+        "en": "One dumbbell held with both hands behind your head; elbows pointing to the ceiling."
+      }
+    },
+    {
+      "id": "plank",
+      "name": {"es": "Plancha", "en": "Plank"},
+      "muscle_groups": ["core"],
+      "equipment": ["mat"],
+      "level": "beginner",
+      "contraindicated_for": ["shoulder"],
+      "notes": {
+        "es": "Apoyo en antebrazos, cuerpo en línea recta. Prioriza postura sobre duración.",
+        "en": "Rest on your forearms, body in a straight line. Prioritize posture over duration."
+      }
+    },
+    {
+      "id": "side_plank",
+      "name": {"es": "Plancha lateral", "en": "Side plank"},
+      "muscle_groups": ["core"],
+      "equipment": ["mat"],
+      "level": "intermediate",
+      "contraindicated_for": ["shoulder"],
+      "notes": {
+        "es": "Cadera alta y alineada. Trabaja oblicuos; alterna lados.",
+        "en": "Hips high and aligned. Works the obliques; alternate sides."
+      }
+    },
+    {
+      "id": "crunch",
+      "name": {"es": "Crunch abdominal", "en": "Crunch"},
+      "muscle_groups": ["core"],
+      "equipment": ["mat"],
+      "level": "beginner",
+      "contraindicated_for": ["neck", "lower_back"],
+      "notes": {
+        "es": "Despega solo la parte alta de la espalda; no tires del cuello con las manos.",
+        "en": "Lift only your upper back off the floor; don't pull on your neck with your hands."
+      }
+    },
+    {
+      "id": "leg_raises",
+      "name": {"es": "Elevación de piernas", "en": "Leg raises"},
+      "muscle_groups": ["core"],
+      "equipment": ["mat"],
+      "level": "intermediate",
+      "contraindicated_for": ["lower_back"],
+      "notes": {
+        "es": "Zona lumbar apoyada en el piso durante todo el movimiento; flexiona rodillas si hace falta.",
+        "en": "Lower back pressed to the floor throughout the movement; bend your knees if needed."
+      }
+    },
+    {
+      "id": "dead_bug",
+      "name": {"es": "Dead bug", "en": "Dead bug"},
+      "muscle_groups": ["core"],
+      "equipment": ["mat"],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Extiende brazo y pierna opuestos manteniendo la lumbar pegada al piso. Muy seguro.",
+        "en": "Extend opposite arm and leg keeping your lower back pressed to the floor. Very safe."
+      }
+    },
+    {
+      "id": "bird_dog",
+      "name": {"es": "Bird dog", "en": "Bird dog"},
+      "muscle_groups": ["core", "back"],
+      "equipment": ["mat"],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "En cuadrupedia, extiende brazo y pierna opuestos. Lento y estable.",
+        "en": "On all fours, extend opposite arm and leg. Slow and stable."
+      }
+    },
+    {
+      "id": "mountain_climbers",
+      "name": {"es": "Mountain climbers", "en": "Mountain climbers"},
+      "muscle_groups": ["core", "cardio"],
+      "equipment": [],
+      "level": "intermediate",
+      "contraindicated_for": ["wrist", "knee"],
+      "notes": {
+        "es": "Posición de plancha alta llevando rodillas al pecho en forma alternada.",
+        "en": "High plank position, driving your knees to your chest alternately."
+      }
+    },
+    {
+      "id": "russian_twist",
+      "name": {"es": "Giro ruso", "en": "Russian twist"},
+      "muscle_groups": ["core"],
+      "equipment": ["mat"],
+      "level": "intermediate",
+      "contraindicated_for": ["lower_back"],
+      "notes": {
+        "es": "Sentado con torso inclinado atrás, gira el tronco de lado a lado con control.",
+        "en": "Seated with your torso leaning back, rotate side to side with control."
+      }
+    },
+    {
+      "id": "hollow_hold",
+      "name": {"es": "Hollow hold", "en": "Hollow hold"},
+      "muscle_groups": ["core"],
+      "equipment": ["mat"],
+      "level": "advanced",
+      "contraindicated_for": ["lower_back", "neck"],
+      "notes": {
+        "es": "Cuerpo en forma de banana con lumbar pegada al piso. Isométrico exigente.",
+        "en": "Banana-shaped body with your lower back pressed to the floor. A demanding isometric."
+      }
+    },
+    {
+      "id": "burpees",
+      "name": {"es": "Burpees", "en": "Burpees"},
+      "muscle_groups": ["cardio", "legs", "chest"],
+      "equipment": [],
+      "level": "intermediate",
+      "contraindicated_for": ["knee", "wrist", "lower_back"],
+      "notes": {
+        "es": "Movimiento completo de alta intensidad. Versión sin salto para bajar impacto.",
+        "en": "Full-body high-intensity movement. No-jump version to reduce impact."
+      }
+    },
+    {
+      "id": "jumping_jacks",
+      "name": {"es": "Jumping jacks", "en": "Jumping jacks"},
+      "muscle_groups": ["cardio"],
+      "equipment": [],
+      "level": "beginner",
+      "contraindicated_for": ["knee", "ankle"],
+      "notes": {
+        "es": "Clásico de entrada en calor. Versión sin salto: alternar toques laterales.",
+        "en": "A warm-up classic. No-jump version: alternate side taps."
+      }
+    },
+    {
+      "id": "jump_rope",
+      "name": {"es": "Salto a la soga", "en": "Jump rope"},
+      "muscle_groups": ["cardio"],
+      "equipment": ["jump_rope"],
+      "level": "intermediate",
+      "contraindicated_for": ["knee", "ankle"],
+      "notes": {
+        "es": "Saltos bajos y continuos sobre puntas de pie. Gran gasto calórico por minuto.",
+        "en": "Low, continuous hops on the balls of your feet. High calorie burn per minute."
+      }
+    },
+    {
+      "id": "stationary_bike",
+      "name": {"es": "Bicicleta fija", "en": "Stationary bike"},
+      "muscle_groups": ["cardio"],
+      "equipment": ["stationary_bike"],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Cardio de bajo impacto, apto con molestias de rodilla leves si el rango no duele.",
+        "en": "Low-impact cardio, suitable with mild knee discomfort if the range doesn't hurt."
+      }
+    },
+    {
+      "id": "treadmill_walk",
+      "name": {"es": "Caminata en cinta", "en": "Treadmill walk"},
+      "muscle_groups": ["cardio"],
+      "equipment": ["treadmill"],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Ajusta inclinación para subir intensidad sin impacto de carrera.",
+        "en": "Adjust the incline to raise intensity without running impact."
+      }
+    },
+    {
+      "id": "treadmill_run",
+      "name": {"es": "Carrera en cinta", "en": "Treadmill run"},
+      "muscle_groups": ["cardio"],
+      "equipment": ["treadmill"],
+      "level": "intermediate",
+      "contraindicated_for": ["knee", "ankle"],
+      "notes": {
+        "es": "Progresa volumen de a poco (regla del ~10% semanal) para evitar sobrecargas.",
+        "en": "Increase volume gradually (~10% weekly rule) to avoid overuse injuries."
+      }
+    },
+    {
+      "id": "sprints",
+      "name": {"es": "Sprints", "en": "Sprints"},
+      "muscle_groups": ["cardio", "legs"],
+      "equipment": [],
+      "level": "advanced",
+      "contraindicated_for": ["knee", "ankle", "hip"],
+      "notes": {
+        "es": "Máxima intensidad con pausas amplias. Entrada en calor obligatoria.",
+        "en": "Maximum intensity with generous rest. Warm-up is mandatory."
+      }
+    },
+    {
+      "id": "kettlebell_swing",
+      "name": {"es": "Swing con kettlebell", "en": "Kettlebell swing"},
+      "muscle_groups": ["glutes", "cardio", "back"],
+      "equipment": ["kettlebell"],
+      "level": "intermediate",
+      "contraindicated_for": ["lower_back"],
+      "notes": {
+        "es": "El impulso nace de la cadera (bisagra), no de los brazos ni de la zona lumbar.",
+        "en": "The drive comes from the hips (hinge), not from your arms or lower back."
+      }
+    },
+    {
+      "id": "rowing_machine",
+      "name": {"es": "Remo en ergómetro", "en": "Rowing machine"},
+      "muscle_groups": ["cardio", "back"],
+      "equipment": ["gym_machines"],
+      "level": "beginner",
+      "contraindicated_for": ["lower_back"],
+      "notes": {
+        "es": "Secuencia piernas-torso-brazos. Cardio de bajo impacto de cuerpo completo.",
+        "en": "Legs-torso-arms sequence. Low-impact, full-body cardio."
+      }
+    },
+    {
+      "id": "easy_run",
+      "name": {"es": "Rodaje suave (carrera continua)", "en": "Easy run (steady running)"},
+      "muscle_groups": ["cardio"],
+      "equipment": [],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Carrera continua a ritmo conversacional (puedes hablar mientras corres). La base del entrenamiento de resistencia.",
+        "en": "Continuous running at a conversational pace (you can talk while running). The base of endurance training."
+      }
+    },
+    {
+      "id": "long_run",
+      "name": {"es": "Tirada larga", "en": "Long run"},
+      "muscle_groups": ["cardio"],
+      "equipment": [],
+      "level": "intermediate",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "La sesión clave de la semana para media maratón o maratón. Ritmo cómodo, aumenta la distancia de forma gradual (~10% semanal).",
+        "en": "The key session of the week for half or full marathon. Comfortable pace, increase distance gradually (~10% weekly)."
+      }
+    },
+    {
+      "id": "running_intervals",
+      "name": {"es": "Intervalos de carrera", "en": "Running intervals"},
+      "muscle_groups": ["cardio", "legs"],
+      "equipment": [],
+      "level": "intermediate",
+      "contraindicated_for": ["knee", "ankle"],
+      "notes": {
+        "es": "Repeticiones rápidas (ej. 6 × 400 m) con trote o pausa entre series. Mejora el VO2 máx y el ritmo de carrera.",
+        "en": "Fast repeats (e.g. 6 × 400 m) with a jog or rest between sets. Improves VO2 max and race pace."
+      }
+    },
+    {
+      "id": "fartlek",
+      "name": {"es": "Fartlek (juego de ritmos)", "en": "Fartlek (speed play)"},
+      "muscle_groups": ["cardio"],
+      "equipment": [],
+      "level": "intermediate",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Cambios de ritmo libres dentro de un rodaje (ej. 1 min rápido / 2 min suave). Intensidad sin estructura rígida.",
+        "en": "Free pace changes within a run (e.g. 1 min fast / 2 min easy). Intensity without rigid structure."
+      }
+    },
+    {
+      "id": "hill_repeats",
+      "name": {"es": "Cuestas (repeticiones en subida)", "en": "Hill repeats"},
+      "muscle_groups": ["cardio", "legs"],
+      "equipment": [],
+      "level": "advanced",
+      "contraindicated_for": ["knee", "ankle"],
+      "notes": {
+        "es": "Subidas cortas a intensidad alta, bajando al trote. Fuerza específica de carrera con impacto controlado.",
+        "en": "Short uphill efforts at high intensity, jogging back down. Running-specific strength with controlled impact."
+      }
+    },
+    {
+      "id": "recovery_jog",
+      "name": {"es": "Trote regenerativo", "en": "Recovery jog"},
+      "muscle_groups": ["cardio"],
+      "equipment": [],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Trote muy suave y corto, al día siguiente de sesiones exigentes. Recuperación activa.",
+        "en": "Very easy, short jog the day after demanding sessions. Active recovery."
+      }
+    },
+    {
+      "id": "brisk_walk",
+      "name": {"es": "Caminata rápida", "en": "Brisk walk"},
+      "muscle_groups": ["cardio"],
+      "equipment": [],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Cardio de bajo impacto; buena alternativa o complemento cuando la carrera está limitada por molestias.",
+        "en": "Low-impact cardio; a good alternative or complement when running is limited by discomfort."
+      }
+    },
+    {
+      "id": "cat_camel",
+      "name": {"es": "Gato-camello", "en": "Cat-camel"},
+      "muscle_groups": ["mobility", "back"],
+      "equipment": ["mat"],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Alterna flexión y extensión suave de columna en cuadrupedia. Ideal para calentar.",
+        "en": "Alternate gentle spinal flexion and extension on all fours. Ideal for warming up."
+      }
+    },
+    {
+      "id": "hamstring_stretch",
+      "name": {"es": "Estiramiento de isquiotibiales", "en": "Hamstring stretch"},
+      "muscle_groups": ["mobility"],
+      "equipment": ["mat"],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Sostén 20-30 segundos sin rebotes, con la espalda lo más neutra posible.",
+        "en": "Hold 20-30 seconds without bouncing, keeping your back as neutral as possible."
+      }
+    },
+    {
+      "id": "hip_rotations",
+      "name": {"es": "Rotaciones de cadera", "en": "Hip rotations"},
+      "muscle_groups": ["mobility"],
+      "equipment": [],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Círculos amplios y controlados de cadera, de pie o en cuadrupedia.",
+        "en": "Wide, controlled hip circles, standing or on all fours."
+      }
+    },
+    {
+      "id": "deep_squat_hold",
+      "name": {"es": "Sentadilla profunda sostenida", "en": "Deep squat hold"},
+      "muscle_groups": ["mobility", "legs"],
+      "equipment": [],
+      "level": "intermediate",
+      "contraindicated_for": ["knee", "ankle"],
+      "notes": {
+        "es": "Mantén la posición baja 20-40 segundos usando talones como apoyo firme.",
+        "en": "Hold the bottom position 20-40 seconds, keeping your heels firmly planted."
+      }
+    },
+    {
+      "id": "wall_chest_stretch",
+      "name": {"es": "Apertura de pecho en pared", "en": "Wall chest stretch"},
+      "muscle_groups": ["mobility", "shoulders"],
+      "equipment": [],
+      "level": "beginner",
+      "contraindicated_for": [],
+      "notes": {
+        "es": "Antebrazo apoyado en la pared, gira el torso alejándote. Estira pectoral y hombro.",
+        "en": "Forearm against the wall, rotate your torso away. Stretches the chest and shoulder."
+      }
+    }
+  ]
+}

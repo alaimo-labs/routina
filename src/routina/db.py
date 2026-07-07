@@ -87,12 +87,62 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.execute(
             "ALTER TABLE runs ADD COLUMN provider TEXT NOT NULL DEFAULT 'openai'"
         )
+    # Migración: agregar lang a runs. Las corridas previas fueron todas en español.
+    if "lang" not in existing_cols:
+        conn.execute("ALTER TABLE runs ADD COLUMN lang TEXT NOT NULL DEFAULT 'es'")
     # Migración: agregar mode a chats si viene de una versión anterior.
     cur = conn.execute("PRAGMA table_info(chats)")
     chat_cols = {row[1] for row in cur.fetchall()}
     if "mode" not in chat_cols:
         conn.execute("ALTER TABLE chats ADD COLUMN mode TEXT NOT NULL DEFAULT 'chat'")
+    _migrate_profile_ids(conn)
     conn.commit()
+
+
+# El vocabulario del catálogo pasó de IDs en español (ejercicios_v1) a IDs en
+# inglés (exercises_v1). Los perfiles guardados con los IDs viejos se migran acá.
+_LEGACY_EQUIPMENT_IDS = {
+    "colchoneta": "mat",
+    "mancuernas": "dumbbells",
+    "barra": "barbell",
+    "banco": "bench",
+    "bandas": "resistance_bands",
+    "kettlebell": "kettlebell",
+    "barra_dominadas": "pullup_bar",
+    "maquinas": "gym_machines",
+    "bicicleta": "stationary_bike",
+    "cinta": "treadmill",
+    "soga": "jump_rope",
+}
+_LEGACY_INJURY_IDS = {
+    "rodilla": "knee",
+    "tobillo": "ankle",
+    "cadera": "hip",
+    "lumbar": "lower_back",
+    "cervical": "neck",
+    "hombro": "shoulder",
+    "codo": "elbow",
+    "muneca": "wrist",
+}
+
+
+def _migrate_profile_ids(conn: sqlite3.Connection) -> None:
+    """Migra los IDs del perfil del vocabulario viejo (español) al nuevo (inglés).
+
+    Idempotente: los IDs ya migrados no están en el mapa y pasan intactos.
+    """
+    row = conn.execute("SELECT * FROM profile WHERE id = 1").fetchone()
+    if row is None:
+        return
+    equipment = [_LEGACY_EQUIPMENT_IDS.get(i, i) for i in json.loads(row["equipamiento_json"])]
+    injuries = [_LEGACY_INJURY_IDS.get(i, i) for i in json.loads(row["lesiones_json"])]
+    conn.execute(
+        "UPDATE profile SET equipamiento_json = ?, lesiones_json = ? WHERE id = 1",
+        (
+            json.dumps(equipment, ensure_ascii=False),
+            json.dumps(injuries, ensure_ascii=False),
+        ),
+    )
 
 
 def _now_iso() -> str:
@@ -119,6 +169,7 @@ def insert_run(
     num_turns: int,
     status: str,
     chat_id: int | None = None,
+    lang: str = "es",
 ) -> int:
     cur = conn.execute(
         """
@@ -126,8 +177,8 @@ def insert_run(
             created_at, user_input, prompt_mode, system_prompt, prompt_id, prompt_version,
             schema_path, model, messages_json, tool_calls_json, raw_response, parsed_json,
             parse_error, schema_errors, latency_ms, input_tokens, output_tokens, num_turns,
-            status, provider, chat_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            status, provider, chat_id, lang
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             _now_iso(),
@@ -154,6 +205,7 @@ def insert_run(
             status,
             provider,
             chat_id,
+            lang,
         ),
     )
     conn.commit()
@@ -231,6 +283,9 @@ def insert_routine(
     run_id: int,
     payload: dict[str, Any],
 ) -> int:
+    # Los payloads nuevos usan claves en inglés; el fallback a las claves en
+    # español permite guardar rutinas de runs anteriores al cambio de contrato.
+    # Los nombres de columnas quedan en español por compatibilidad con bases en uso.
     cur = conn.execute(
         """
         INSERT INTO routines (
@@ -240,10 +295,10 @@ def insert_routine(
         (
             run_id,
             _now_iso(),
-            payload.get("objetivo", ""),
-            payload.get("dias_por_semana"),
-            payload.get("duracion_sesion"),
-            payload.get("formato"),
+            payload.get("goal", payload.get("objetivo", "")),
+            payload.get("days_per_week", payload.get("dias_por_semana")),
+            payload.get("session_duration", payload.get("duracion_sesion")),
+            payload.get("format", payload.get("formato")),
             json.dumps(payload, ensure_ascii=False),
         ),
     )
@@ -275,19 +330,19 @@ def get_run(conn: sqlite3.Connection, run_id: int) -> sqlite3.Row | None:
 def list_routines(
     conn: sqlite3.Connection,
     *,
-    objetivo_contains: str | None = None,
-    formato: str | None = None,
+    goal_contains: str | None = None,
+    format_name: str | None = None,
     limit: int = 200,
 ) -> list[sqlite3.Row]:
     query = "SELECT * FROM routines"
     clauses: list[str] = []
     params: list[Any] = []
-    if objetivo_contains:
+    if goal_contains:
         clauses.append("objetivo LIKE ?")
-        params.append(f"%{objetivo_contains}%")
-    if formato:
+        params.append(f"%{goal_contains}%")
+    if format_name:
         clauses.append("formato = ?")
-        params.append(formato)
+        params.append(format_name)
     if clauses:
         query += " WHERE " + " AND ".join(clauses)
     query += " ORDER BY created_at DESC LIMIT ?"
@@ -318,13 +373,15 @@ def link_routines_to_run(conn: sqlite3.Connection, routine_ids: list[int], run_i
 # Una sola fila (id=1): la app es single-user local. El agente lo consulta vía tool.
 
 def get_profile(conn: sqlite3.Connection) -> dict[str, Any]:
+    # Claves en inglés (contrato de la API y de las tools del agente); las
+    # columnas conservan sus nombres en español por compatibilidad con bases en uso.
     row = conn.execute("SELECT * FROM profile WHERE id = 1").fetchone()
     if row is None:
-        return {"equipamiento": [], "lesiones": [], "notas": "", "updated_at": None}
+        return {"equipment": [], "injuries": [], "notes": "", "updated_at": None}
     return {
-        "equipamiento": json.loads(row["equipamiento_json"]),
-        "lesiones": json.loads(row["lesiones_json"]),
-        "notas": row["notas"],
+        "equipment": json.loads(row["equipamiento_json"]),
+        "injuries": json.loads(row["lesiones_json"]),
+        "notes": row["notas"],
         "updated_at": row["updated_at"],
     }
 
@@ -332,9 +389,9 @@ def get_profile(conn: sqlite3.Connection) -> dict[str, Any]:
 def save_profile(
     conn: sqlite3.Connection,
     *,
-    equipamiento: list[str],
-    lesiones: list[str],
-    notas: str,
+    equipment: list[str],
+    injuries: list[str],
+    notes: str,
 ) -> None:
     conn.execute(
         """
@@ -347,9 +404,9 @@ def save_profile(
             updated_at        = excluded.updated_at
         """,
         (
-            json.dumps(equipamiento, ensure_ascii=False),
-            json.dumps(lesiones, ensure_ascii=False),
-            notas,
+            json.dumps(equipment, ensure_ascii=False),
+            json.dumps(injuries, ensure_ascii=False),
+            notes,
             _now_iso(),
         ),
     )
@@ -367,7 +424,7 @@ def reset_all(conn: sqlite3.Connection) -> dict[str, int]:
     return counts
 
 
-def distinct_formatos(conn: sqlite3.Connection) -> list[str]:
+def distinct_formats(conn: sqlite3.Connection) -> list[str]:
     cur = conn.execute(
         "SELECT DISTINCT formato FROM routines WHERE formato IS NOT NULL ORDER BY formato"
     )

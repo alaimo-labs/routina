@@ -8,14 +8,16 @@ DATA_DIR = ROOT / "data"
 DB_PATH = DATA_DIR / "routina.db"
 PROMPTS_DIR = ROOT / "prompts"
 SCHEMAS_DIR = ROOT / "schemas"
-CATALOG_PATH = ROOT / "catalog" / "ejercicios_v1.json"
-# Cada modo de interacción tiene su propio system prompt y su propio schema de
-# respuesta.
+CATALOG_PATH = ROOT / "catalog" / "exercises_v1.json"
+# Cada modo de interacción tiene su propio system prompt (uno por idioma) y su
+# propio schema de respuesta. Las claves del JSON son en inglés en ambos idiomas;
+# el idioma solo cambia el contenido generado y los textos del prompt.
 MODES = ("oneshot", "chat", "agent")
+LANGS = ("es", "en")
+DEFAULT_LANG = "es"
 PROMPT_PATHS = {
-    "oneshot": PROMPTS_DIR / "routina_oneshot.txt",
-    "chat": PROMPTS_DIR / "routina_chat.txt",
-    "agent": PROMPTS_DIR / "routina_agent.txt",
+    mode: {lang: PROMPTS_DIR / f"routina_{mode}_{lang}.txt" for lang in LANGS}
+    for mode in MODES
 }
 SCHEMA_PATHS = {
     "oneshot": SCHEMAS_DIR / "routina_v1.json",
@@ -72,8 +74,8 @@ def ensure_data_dir() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def read_default_prompt(mode: str) -> str:
-    return PROMPT_PATHS[mode].read_text(encoding="utf-8")
+def read_default_prompt(mode: str, lang: str = DEFAULT_LANG) -> str:
+    return PROMPT_PATHS[mode][lang].read_text(encoding="utf-8")
 
 
 def schema_path(mode: str):

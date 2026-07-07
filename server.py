@@ -28,7 +28,7 @@ import verica  # noqa: E402
 
 _verica_on = False
 if os.environ.get("VERICA_TOKEN"):
-    _verica_on = verica.init(service_name="routina")
+    _verica_on = verica.init(service_name="routina", tags=["routina"])
 
 # Recién ahora importamos llm/db/validate; los SDKs de LLM se importan ya parcheados.
 from routina import agent_tools, catalog, db, llm, validate  # noqa: E402
@@ -74,13 +74,18 @@ def get_config() -> dict[str, Any]:
         "providers": config.providers_with_key(),
         "provider_envs": config.PROVIDER_ENV,
         "schema_paths": {mode: config.schema_rel_path(mode) for mode in config.MODES},
+        "langs": list(config.LANGS),
+        "default_lang": config.DEFAULT_LANG,
     }
 
 
 @app.get("/api/system-prompt")
-def get_system_prompts() -> dict[str, str]:
-    """Prompts por defecto de cada modo (oneshot/chat)."""
-    return {mode: config.read_default_prompt(mode) for mode in config.MODES}
+def get_system_prompts() -> dict[str, dict[str, str]]:
+    """Prompts por defecto de cada modo, por idioma: {mode: {lang: prompt}}."""
+    return {
+        mode: {lang: config.read_default_prompt(mode, lang) for lang in config.LANGS}
+        for mode in config.MODES
+    }
 
 
 @app.get("/api/schema")
@@ -97,6 +102,7 @@ class OneshotGenerateRequest(BaseModel):
     user_input: str = Field(..., min_length=1)
     model: str
     system_prompt: Optional[str] = None
+    lang: str = config.DEFAULT_LANG
 
 
 class ChatGenerateRequest(BaseModel):
@@ -104,23 +110,25 @@ class ChatGenerateRequest(BaseModel):
     model: str
     system_prompt: Optional[str] = None
     chat_id: Optional[int] = None
+    lang: str = config.DEFAULT_LANG
 
 
-def _make_chat_title(user_input: str) -> str:
+def _make_chat_title(user_input: str, lang: str) -> str:
     title = user_input.strip().replace("\n", " ")
     if len(title) > 60:
         title = title[:60].rstrip() + "…"
-    return title or "Conversación"
+    return title or ("Conversación" if lang == "es" else "Conversation")
 
 
-def _build_prior_messages(prior_runs: list) -> list[dict[str, Any]]:
+def _build_prior_messages(prior_runs: list, lang: str = "es") -> list[dict[str, Any]]:
     """A partir de runs previos en orden cronológico, arma el historial user/assistant.
 
     Los turnos de preguntas del agente NO se reinyectan como el sobre JSON
-    {tipo: "preguntas"}: si el modelo ve ese JSON como mensaje assistant previo,
-    aprende a imitarlo como texto en vez de usar la tool preguntar_usuario. Se
-    reemplazan por una descripción neutra (las respuestas del usuario ya citan
-    cada pregunta, así que no se pierde contexto).
+    {type: "questions"}: si el modelo ve ese JSON como mensaje assistant previo,
+    aprende a imitarlo como texto en vez de usar la tool ask_user. Se reemplazan
+    por una descripción neutra (las respuestas del usuario ya citan cada pregunta,
+    así que no se pierde contexto). Se aceptan también los sobres del contrato
+    anterior en español ({tipo: "preguntas"}) para chats previos al cambio.
     """
     messages: list[dict[str, Any]] = []
     for r in prior_runs:
@@ -130,14 +138,19 @@ def _build_prior_messages(prior_runs: list) -> list[dict[str, Any]]:
             continue
         content = r["raw_response"]
         parsed = json.loads(r["parsed_json"]) if r["parsed_json"] else None
-        if isinstance(parsed, dict) and parsed.get("tipo") == "preguntas":
+        if isinstance(parsed, dict) and (
+            parsed.get("type") == "questions" or parsed.get("tipo") == "preguntas"
+        ):
+            questions = parsed.get("questions") or parsed.get("preguntas") or []
             listado = "\n".join(
-                f"- {q.get('pregunta', '')}" for q in parsed.get("preguntas", [])
+                f"- {q.get('question', q.get('pregunta', ''))}" for q in questions
             )
-            content = (
-                "(Con la herramienta preguntar_usuario le hice al usuario estas preguntas:)\n"
-                + listado
+            header = (
+                "(Con la herramienta ask_user le hice al usuario estas preguntas:)"
+                if lang == "es"
+                else "(Using the ask_user tool, I asked the user these questions:)"
             )
+            content = header + "\n" + listado
         messages.append({"role": "assistant", "content": content})
     return messages
 
@@ -153,7 +166,7 @@ def _validate_and_persist_run(
     schema_obj = validate.load_schema(config.schema_path(mode))
     schema_errors: Optional[list[str]] = None
     if result.parsed is not None:
-        ok, errs = validate.validate_against_schema(result.parsed, schema_obj)
+        ok, errs = validate.validate_against_schema(result.parsed, schema_obj, req.lang)
         if not ok:
             schema_errors = errs
 
@@ -187,6 +200,7 @@ def _validate_and_persist_run(
             num_turns=result.num_turns,
             status=status,
             chat_id=chat_id,
+            lang=req.lang,
         )
         if chat_id is not None:
             db.touch_chat(conn, chat_id)
@@ -197,14 +211,18 @@ def _validate_and_persist_run(
 
 
 def _common_pre_checks(req) -> str:
-    """Valida que el proveedor del modelo tenga API key. Devuelve el proveedor."""
+    """Valida idioma y que el proveedor del modelo tenga API key. Devuelve el proveedor."""
+    if req.lang not in config.LANGS:
+        raise HTTPException(status_code=400, detail=f"Idioma desconocido / unknown language: {req.lang}")
     provider = config.provider_for(req.model)
     if not config.get_api_key(provider):
-        env_var = config.PROVIDER_ENV.get(provider, "la API key")
-        raise HTTPException(
-            status_code=400,
-            detail=f"{env_var} no está configurada. Edita el archivo .env y vuelve a iniciar el servidor.",
+        env_var = config.PROVIDER_ENV.get(provider, "API key")
+        detail = (
+            f"{env_var} no está configurada. Edita el archivo .env y vuelve a iniciar el servidor."
+            if req.lang == "es"
+            else f"{env_var} is not configured. Edit the .env file and restart the server."
         )
+        raise HTTPException(status_code=400, detail=detail)
     return provider
 
 
@@ -214,13 +232,15 @@ def oneshot_generate(req: OneshotGenerateRequest) -> dict[str, Any]:
     provider = _common_pre_checks(req)
     api_key = config.get_api_key(provider)
 
-    result = llm.generate_routine(
-        provider=provider,
-        api_key=api_key,
-        model=req.model,
-        user_input=req.user_input,
-        system_prompt=req.system_prompt,
-    )
+    with verica.tags(["oneshot"]):
+        result = llm.generate_routine(
+            provider=provider,
+            api_key=api_key,
+            model=req.model,
+            user_input=req.user_input,
+            system_prompt=req.system_prompt,
+            lang=req.lang,
+        )
 
     run_id, status, schema_errors = _validate_and_persist_run(
         req=req, result=result, chat_id=None, mode="oneshot"
@@ -255,7 +275,7 @@ def chat_generate(req: ChatGenerateRequest) -> dict[str, Any]:
         if chat_id is None:
             chat_id = db.insert_chat(
                 conn,
-                title=_make_chat_title(req.user_input),
+                title=_make_chat_title(req.user_input, req.lang),
                 mode="chat",
             )
             chat_was_created = True
@@ -264,11 +284,11 @@ def chat_generate(req: ChatGenerateRequest) -> dict[str, Any]:
             if existing is None:
                 raise HTTPException(status_code=404, detail="Chat no encontrado.")
             prior_runs = db.list_runs_for_chat(conn, chat_id)
-            prior_messages = _build_prior_messages(prior_runs)
+            prior_messages = _build_prior_messages(prior_runs, req.lang)
     finally:
         conn.close()
 
-    with verica.conversation(f"routina-chat-{chat_id}"):
+    with verica.conversation(f"routina-chat-{chat_id}"), verica.tags(["chat"]):
         result = llm.generate_routine(
             provider=provider,
             api_key=api_key,
@@ -276,6 +296,7 @@ def chat_generate(req: ChatGenerateRequest) -> dict[str, Any]:
             user_input=req.user_input,
             system_prompt=req.system_prompt,
             prior_messages=prior_messages,
+            lang=req.lang,
         )
 
     run_id, status, schema_errors = _validate_and_persist_run(
@@ -300,8 +321,8 @@ def chat_generate(req: ChatGenerateRequest) -> dict[str, Any]:
     }
 
 
-# Loops agénticos pausados esperando respuesta del usuario (preguntar_usuario),
-# por chat_id. En memoria a propósito: el estado es efímero (una pregunta abierta
+# Loops agénticos pausados esperando respuesta del usuario (ask_user), por
+# chat_id. En memoria a propósito: el estado es efímero (una pregunta abierta
 # en una sesión viva) y si se pierde —reinicio del server, cambio de modelo— el
 # turno cae al fallback de historial reconstruido (_build_prior_messages).
 AGENT_PENDING: dict[int, dict[str, Any]] = {}
@@ -317,8 +338,8 @@ def agent_generate(req: ChatGenerateRequest) -> StreamingResponse:
     (+ tool_calls). Los errores previos al stream (API key, chat inexistente)
     salen como HTTP 4xx normales.
 
-    Si el chat tiene un loop pausado en preguntar_usuario (AGENT_PENDING), este
-    turno lo reanuda: el user_input viaja al proveedor como tool_result nativo.
+    Si el chat tiene un loop pausado en ask_user (AGENT_PENDING), este turno lo
+    reanuda: el user_input viaja al proveedor como tool_result nativo.
     """
     provider = _common_pre_checks(req)
     api_key = config.get_api_key(provider)
@@ -331,7 +352,7 @@ def agent_generate(req: ChatGenerateRequest) -> StreamingResponse:
         if chat_id is None:
             chat_id = db.insert_chat(
                 conn,
-                title=_make_chat_title(req.user_input),
+                title=_make_chat_title(req.user_input, req.lang),
                 mode="agent",
             )
             chat_was_created = True
@@ -340,7 +361,7 @@ def agent_generate(req: ChatGenerateRequest) -> StreamingResponse:
             if existing is None:
                 raise HTTPException(status_code=404, detail="Chat no encontrado.")
             prior_runs = db.list_runs_for_chat(conn, chat_id)
-            prior_messages = _build_prior_messages(prior_runs)
+            prior_messages = _build_prior_messages(prior_runs, req.lang)
     finally:
         conn.close()
 
@@ -356,13 +377,15 @@ def agent_generate(req: ChatGenerateRequest) -> StreamingResponse:
 
     def worker() -> None:
         try:
-            # guardar_rutina inserta rutinas antes de que exista el run; se linkean después.
+            # save_routine inserta rutinas antes de que exista el run; se linkean después.
             saved_routine_ids: list[int] = []
 
             def tool_executor(name: str, args: dict[str, Any]) -> dict[str, Any]:
-                return agent_tools.execute(name, args, saved_routine_ids=saved_routine_ids)
+                return agent_tools.execute(
+                    name, args, saved_routine_ids=saved_routine_ids, lang=req.lang
+                )
 
-            with verica.conversation(f"routina-agent-{chat_id}"):
+            with verica.conversation(f"routina-agent-{chat_id}"), verica.tags(["agent"]):
                 result = llm.run_agent(
                     provider=provider,
                     api_key=api_key,
@@ -370,13 +393,14 @@ def agent_generate(req: ChatGenerateRequest) -> StreamingResponse:
                     user_input=req.user_input,
                     system_prompt=req.system_prompt,
                     prior_messages=prior_messages,
-                    tools=agent_tools.tool_defs(),
+                    tools=agent_tools.tool_defs(req.lang),
                     tool_executor=tool_executor,
                     on_tool_start=lambda name: events.put({"type": "tool", "name": name}),
                     resume_state=resume_state,
+                    lang=req.lang,
                 )
 
-            # Si el loop quedó pausado en preguntar_usuario, guardar su estado para
+            # Si el loop quedó pausado en ask_user, guardar su estado para
             # reanudarlo cuando llegue la respuesta.
             if result.pending_state is not None:
                 AGENT_PENDING[chat_id] = {
@@ -415,7 +439,7 @@ def agent_generate(req: ChatGenerateRequest) -> StreamingResponse:
                         "model": result.model,
                         "tool_calls": result.tool_calls,
                         "saved_routine_ids": saved_routine_ids,
-                        "num_iteraciones": result.num_turns,
+                        "num_iterations": result.num_turns,
                     },
                 }
             )
@@ -450,6 +474,7 @@ def _run_summary(row) -> dict[str, Any]:
         "status": row["status"],
         "model": row["model"],
         "provider": row["provider"] if "provider" in row.keys() else "openai",
+        "lang": row["lang"] if "lang" in row.keys() else "es",
         "user_input": row["user_input"],
         "latency_ms": row["latency_ms"],
         "input_tokens": row["input_tokens"],
@@ -502,16 +527,18 @@ def get_run(run_id: int) -> dict[str, Any]:
 # ======================================================================================
 class SaveRoutineRequest(BaseModel):
     run_id: int
+    lang: str = config.DEFAULT_LANG
 
 
 def _routine_summary(row) -> dict[str, Any]:
+    # Claves en inglés (contrato de la API); las columnas conservan sus nombres.
     return {
         "id": row["id"],
         "created_at": row["created_at"],
-        "objetivo": row["objetivo"],
-        "dias_por_semana": row["dias_por_semana"],
-        "duracion_sesion": row["duracion_sesion"],
-        "formato": row["formato"],
+        "goal": row["objetivo"],
+        "days_per_week": row["dias_por_semana"],
+        "session_duration": row["duracion_sesion"],
+        "format": row["formato"],
         "run_id": row["run_id"],
     }
 
@@ -524,6 +551,7 @@ def _routine_full(row) -> dict[str, Any]:
 
 @app.post("/api/routines")
 def save_routine(req: SaveRoutineRequest) -> dict[str, int]:
+    es = req.lang != "en"
     conn = db.get_conn()
     try:
         run = db.get_run(conn, req.run_id)
@@ -532,16 +560,29 @@ def save_routine(req: SaveRoutineRequest) -> dict[str, int]:
         if not run["parsed_json"]:
             raise HTTPException(
                 status_code=400,
-                detail="El run no tiene un JSON válido para guardar como rutina.",
+                detail=(
+                    "El run no tiene un JSON válido para guardar como rutina."
+                    if es
+                    else "The run doesn't have a valid JSON to save as a routine."
+                ),
             )
         payload = json.loads(run["parsed_json"])
-        # Los runs de chat devuelven un sobre {tipo, rutina|mensaje}; se guarda solo la rutina.
-        if isinstance(payload, dict) and payload.get("tipo") == "rutina":
-            payload = payload.get("rutina") or {}
-        elif isinstance(payload, dict) and payload.get("tipo") == "mensaje":
+        # Los runs de chat devuelven un sobre {type, routine|message}; se guarda solo
+        # la rutina. Se aceptan también los sobres del contrato anterior en español.
+        if isinstance(payload, dict) and (
+            payload.get("type") == "routine" or payload.get("tipo") == "rutina"
+        ):
+            payload = payload.get("routine") or payload.get("rutina") or {}
+        elif isinstance(payload, dict) and (
+            payload.get("type") == "message" or payload.get("tipo") == "mensaje"
+        ):
             raise HTTPException(
                 status_code=400,
-                detail="Este run es un mensaje conversacional, no tiene una rutina para guardar.",
+                detail=(
+                    "Este run es un mensaje conversacional, no tiene una rutina para guardar."
+                    if es
+                    else "This run is a conversational message, there is no routine to save."
+                ),
             )
         routine_id = db.insert_routine(conn, run_id=req.run_id, payload=payload)
         return {"routine_id": routine_id}
@@ -551,21 +592,21 @@ def save_routine(req: SaveRoutineRequest) -> dict[str, int]:
 
 @app.get("/api/routines")
 def list_routines(
-    objetivo: Optional[str] = None,
-    formato: Optional[str] = None,
+    goal: Optional[str] = None,
+    format: Optional[str] = None,
     limit: int = 100,
 ) -> dict[str, Any]:
     conn = db.get_conn()
     try:
         rows = db.list_routines(
             conn,
-            objetivo_contains=objetivo,
-            formato=formato,
+            goal_contains=goal,
+            format_name=format,
             limit=limit,
         )
         return {
             "routines": [_routine_summary(r) for r in rows],
-            "formatos": db.distinct_formatos(conn),
+            "formats": db.distinct_formats(conn),
         }
     finally:
         conn.close()
@@ -669,14 +710,17 @@ def delete_chat(chat_id: int) -> dict[str, str]:
 # Perfil del usuario
 # ======================================================================================
 class ProfileUpdateRequest(BaseModel):
-    equipamiento: list[str] = Field(default_factory=list)
-    lesiones: list[str] = Field(default_factory=list)
-    notas: str = ""
+    equipment: list[str] = Field(default_factory=list)
+    injuries: list[str] = Field(default_factory=list)
+    notes: str = ""
 
 
 @app.get("/api/profile")
 def get_profile() -> dict[str, Any]:
-    """Perfil actual + vocabulario cerrado del catálogo (para armar los checkboxes)."""
+    """Perfil actual + vocabulario cerrado del catálogo (para armar los checkboxes).
+
+    El vocabulario trae labels bilingües ({es, en}); la UI muestra el del idioma activo.
+    """
     conn = db.get_conn()
     try:
         return {"profile": db.get_profile(conn), "vocab": catalog.vocab()}
@@ -686,20 +730,20 @@ def get_profile() -> dict[str, Any]:
 
 @app.put("/api/profile")
 def update_profile(req: ProfileUpdateRequest) -> dict[str, Any]:
-    invalid_eq = set(req.equipamiento) - catalog.valid_ids("equipamiento")
-    invalid_les = set(req.lesiones) - catalog.valid_ids("lesiones")
-    if invalid_eq or invalid_les:
+    invalid_eq = set(req.equipment) - catalog.valid_ids("equipment")
+    invalid_inj = set(req.injuries) - catalog.valid_ids("injuries")
+    if invalid_eq or invalid_inj:
         raise HTTPException(
             status_code=400,
-            detail=f"IDs desconocidos: {sorted(invalid_eq | invalid_les)}",
+            detail=f"IDs desconocidos / unknown IDs: {sorted(invalid_eq | invalid_inj)}",
         )
     conn = db.get_conn()
     try:
         db.save_profile(
             conn,
-            equipamiento=req.equipamiento,
-            lesiones=req.lesiones,
-            notas=req.notas.strip(),
+            equipment=req.equipment,
+            injuries=req.injuries,
+            notes=req.notes.strip(),
         )
         return {"profile": db.get_profile(conn)}
     finally:
@@ -711,33 +755,34 @@ def update_profile(req: ProfileUpdateRequest) -> dict[str, Any]:
 # ======================================================================================
 @app.get("/api/catalog")
 def get_catalog(
-    grupo: Optional[str] = None,
-    nivel: Optional[str] = None,
-    equipamiento: Optional[str] = None,
-    evitar_lesiones: Optional[str] = None,
+    muscle_group: Optional[str] = None,
+    level: Optional[str] = None,
+    equipment: Optional[str] = None,
+    avoid_injuries: Optional[str] = None,
 ) -> dict[str, Any]:
-    """Búsqueda en el catálogo local. `equipamiento` y `evitar_lesiones` van como CSV.
+    """Búsqueda en el catálogo local. `equipment` y `avoid_injuries` van como CSV.
 
-    Semántica de `equipamiento`: ausente = no filtrar; presente (incluso vacío "") =
+    Semántica de `equipment`: ausente = no filtrar; presente (incluso vacío "") =
     solo ejercicios cuyo equipamiento requerido esté completamente disponible.
+    Los ejercicios se devuelven con sus campos bilingües ({es, en}) intactos.
     """
-    if grupo and grupo not in catalog.valid_ids("grupos_musculares"):
-        raise HTTPException(status_code=400, detail=f"Grupo desconocido: {grupo}")
-    if nivel and nivel not in catalog.NIVEL_ORDEN:
-        raise HTTPException(status_code=400, detail=f"Nivel desconocido: {nivel}")
+    if muscle_group and muscle_group not in catalog.valid_ids("muscle_groups"):
+        raise HTTPException(status_code=400, detail=f"Grupo desconocido / unknown group: {muscle_group}")
+    if level and level not in catalog.LEVEL_ORDER:
+        raise HTTPException(status_code=400, detail=f"Nivel desconocido / unknown level: {level}")
 
     def _csv(value: Optional[str]) -> Optional[list[str]]:
         if value is None:
             return None
         return [v for v in (s.strip() for s in value.split(",")) if v]
 
-    ejercicios = catalog.search(
-        grupo=grupo,
-        nivel=nivel,
-        equipamiento_disponible=_csv(equipamiento),
-        evitar_lesiones=_csv(evitar_lesiones),
+    exercises = catalog.search(
+        muscle_group=muscle_group,
+        level=level,
+        available_equipment=_csv(equipment),
+        avoid_injuries=_csv(avoid_injuries),
     )
-    return {"total": len(ejercicios), "ejercicios": ejercicios}
+    return {"total": len(exercises), "exercises": exercises}
 
 
 # ======================================================================================

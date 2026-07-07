@@ -18,10 +18,10 @@
                     <div class="brand-logo"></div>
                     <div class="brand-meta">
                         <div class="brand-name">Routina</div>
-                        <div class="brand-tag">Tu coach personal</div>
+                        <div class="brand-tag" data-i18n="brand.tag">Tu coach personal</div>
                     </div>
                 </div>
-                <button class="icon-btn" id="collapse-sidebar" aria-label="Colapsar barra lateral" type="button">
+                <button class="icon-btn" id="collapse-sidebar" aria-label="Colapsar barra lateral" data-i18n-aria="sidebar.collapse" type="button">
                     <span data-icon="panel-left"></span>
                 </button>
             </div>
@@ -29,24 +29,24 @@
             <nav class="mode-nav" id="mode-nav">
                 <a href="/" data-link class="mode-item" data-route="/">
                     <span data-icon="home"></span>
-                    <span class="mode-label">Rutinas</span>
+                    <span class="mode-label" data-i18n="nav.routines">Rutinas</span>
                 </a>
                 <a href="/chat" data-link class="mode-item" data-route="/chat">
                     <span data-icon="message-square"></span>
-                    <span class="mode-label">Chat</span>
+                    <span class="mode-label" data-i18n="nav.chat">Chat</span>
                 </a>
                 <a href="/agent" data-link class="mode-item" data-route="/agent">
                     <span data-icon="bot"></span>
-                    <span class="mode-label">Agente</span>
+                    <span class="mode-label" data-i18n="nav.agent">Agente</span>
                 </a>
             </nav>
 
             <div class="sidebar-context" id="sidebar-chat-section" hidden>
                 <button class="btn-new-chat" id="new-chat-btn" type="button">
                     <span data-icon="plus" data-size="13"></span>
-                    <span>Conversación</span>
+                    <span data-i18n="chats.new">Conversación</span>
                 </button>
-                <div class="sidebar-section-label">Conversaciones</div>
+                <div class="sidebar-section-label" data-i18n="chats.section">Conversaciones</div>
                 <div class="chat-list" id="chat-list"></div>
             </div>
 
@@ -55,28 +55,28 @@
             <div class="sidebar-footer">
                 <a href="/history" data-link class="nav-item" data-route="/history">
                     <span data-icon="history"></span>
-                    <span>Historial</span>
+                    <span data-i18n="nav.history">Historial</span>
                 </a>
                 <button class="settings-btn" id="open-profile" type="button">
                     <span data-icon="user"></span>
-                    <span>Perfil</span>
+                    <span data-i18n="nav.profile">Perfil</span>
                 </button>
                 <button class="settings-btn" id="open-settings" type="button">
                     <span data-icon="settings"></span>
-                    <span>Configuración</span>
+                    <span data-i18n="nav.settings">Configuración</span>
                 </button>
                 <button class="settings-btn" id="open-about" type="button">
                     <span data-icon="info"></span>
-                    <span>Acerca de</span>
+                    <span data-i18n="nav.about">Acerca de</span>
                 </button>
                 <div class="user-meta">
-                    <div class="user-meta-sub">desarrollado por<br><a href="https://alaimolabs.com" target="_blank" rel="noopener" class="user-meta-link">Alaimo Labs</a> para <a href="https://alaimolabs.com/eva" target="_blank" rel="noopener" class="user-meta-link">AI Evals</a></div>
+                    <div class="user-meta-sub" id="footer-credits" data-i18n-html="footer.credits">desarrollado por<br><a href="https://alaimolabs.com" target="_blank" rel="noopener" class="user-meta-link">Alaimo Labs</a> para <a href="https://alaimolabs.com/eva" target="_blank" rel="noopener" class="user-meta-link">AI Evals</a></div>
                 </div>
             </div>
         </aside>
 
         <!-- Floating button to expand sidebar when collapsed -->
-        <button class="sidebar-show-btn" id="show-sidebar" aria-label="Mostrar barra lateral" type="button">
+        <button class="sidebar-show-btn" id="show-sidebar" aria-label="Mostrar barra lateral" data-i18n-aria="sidebar.show" type="button">
             <span data-icon="panel-left"></span>
         </button>
 
@@ -86,24 +86,24 @@
             <section class="view view-home" id="view-home">
                 <header class="view-header view-header--home">
                     <div class="view-eyebrow">
-                        <span class="mono-label">01 · Rutinas</span>
+                        <span class="mono-label" data-i18n="home.eyebrow">01 · Rutinas</span>
                         <div class="view-eyebrow-rule"></div>
                         <span class="mono-label">Routina</span>
                     </div>
                     <div class="view-header-row">
                         <div>
-                            <h2>Tus rutinas guardadas.</h2>
-                            <p class="view-sub">La colección completa, ordenada por fecha. Genera una nueva o revisa las anteriores.</p>
+                            <h2 data-i18n="home.title">Tus rutinas guardadas.</h2>
+                            <p class="view-sub" data-i18n="home.sub">La colección completa, ordenada por fecha. Genera una nueva o revisa las anteriores.</p>
                         </div>
                         <button class="btn-cta-large" id="btn-new-routine" type="button">
                             <span data-icon="plus" data-size="13"></span>
-                            <span>Nueva rutina</span>
+                            <span data-i18n="home.newRoutine">Nueva rutina</span>
                         </button>
                     </div>
                 </header>
                 <div class="filters" id="home-filters" hidden>
-                    <input type="text" id="filter-objetivo" class="text-input" placeholder="Filtrar por objetivo…" />
-                    <select id="filter-formato" class="select-input"></select>
+                    <input type="text" id="filter-goal" class="text-input" placeholder="Filtrar por objetivo…" data-i18n-placeholder="home.filterGoal" />
+                    <select id="filter-format" class="select-input"></select>
                 </div>
                 <div id="routines-grid" class="grid"></div>
             </section>
@@ -119,14 +119,15 @@
                             id="chat-input"
                             class="composer-input"
                             placeholder="Cuanto más concreto seas — objetivo, días disponibles, equipamiento, lesiones — mejor va a ser el plan."
+                            data-i18n-placeholder="chat.placeholder"
                             rows="1"
                         ></textarea>
-                        <button id="send-btn" class="send-btn" type="button" aria-label="Enviar">
-                            <span>Enviar</span>
+                        <button id="send-btn" class="send-btn" type="button" aria-label="Enviar" data-i18n-aria="composer.send">
+                            <span data-i18n="composer.send">Enviar</span>
                             <span>→</span>
                         </button>
                     </div>
-                    <div class="composer-hint">↩ enviar · ⇧ + ↩ nueva línea · cada turno incluye los anteriores como contexto</div>
+                    <div class="composer-hint" data-i18n="chat.hint">↩ enviar · ⇧ + ↩ nueva línea · cada turno incluye los anteriores como contexto</div>
                 </div>
             </section>
 
@@ -141,14 +142,15 @@
                             id="agent-input"
                             class="composer-input"
                             placeholder="Pídele una rutina a tu agente: él lee tu perfil, busca en el catálogo y te pregunta lo que falte."
+                            data-i18n-placeholder="agent.placeholder"
                             rows="1"
                         ></textarea>
-                        <button id="agent-send-btn" class="send-btn" type="button" aria-label="Enviar">
-                            <span>Enviar</span>
+                        <button id="agent-send-btn" class="send-btn" type="button" aria-label="Enviar" data-i18n-aria="composer.send">
+                            <span data-i18n="composer.send">Enviar</span>
                             <span>→</span>
                         </button>
                     </div>
-                    <div class="composer-hint">↩ enviar · ⇧ + ↩ nueva línea · el agente usa tools: perfil, catálogo, validación, guardado</div>
+                    <div class="composer-hint" data-i18n="agent.hint">↩ enviar · ⇧ + ↩ nueva línea · el agente usa tools: perfil, catálogo, validación, guardado</div>
                 </div>
             </section>
 
@@ -156,16 +158,16 @@
             <section class="view view-historial" id="view-historial">
                 <header class="view-header">
                     <div class="view-eyebrow">
-                        <span class="mono-label">04 · Historial</span>
+                        <span class="mono-label" data-i18n="history.eyebrow">04 · Historial</span>
                         <div class="view-eyebrow-rule"></div>
-                        <span class="mono-label">Traza de evals</span>
+                        <span class="mono-label" data-i18n="history.eyebrowRight">Traza de evals</span>
                     </div>
-                    <h2>Historial de corridas.</h2>
-                    <p class="view-sub">Toda la traza: éxitos y fallos, one-shot, chat y agente. Cada llamada al modelo queda registrada.</p>
+                    <h2 data-i18n="history.title">Historial de corridas.</h2>
+                    <p class="view-sub" data-i18n="history.sub">Toda la traza: éxitos y fallos, one-shot, chat y agente. Cada llamada al modelo queda registrada.</p>
                 </header>
                 <div class="filters">
                     <div id="status-pills" class="pills">
-                        <button class="pill-btn active" data-status="" type="button">Todos</button>
+                        <button class="pill-btn active" data-status="" type="button" data-i18n="history.all">Todos</button>
                         <button class="pill-btn" data-status="ok" type="button">OK</button>
                         <button class="pill-btn" data-status="parse_error" type="button">JSON</button>
                         <button class="pill-btn" data-status="schema_error" type="button">Schema</button>
@@ -181,8 +183,8 @@
             <div class="drawer-overlay" data-close-drawer></div>
             <div class="drawer-panel">
                 <header class="drawer-header">
-                    <h2>Configuración</h2>
-                    <button class="icon-btn" data-close-drawer type="button" aria-label="Cerrar">
+                    <h2 data-i18n="settings.title">Configuración</h2>
+                    <button class="icon-btn" data-close-drawer type="button" aria-label="Cerrar" data-i18n-aria="common.close">
                         <span data-icon="x"></span>
                     </button>
                 </header>
@@ -193,12 +195,21 @@
                             <div id="api-key-status" class="api-key-status"></div>
                         </div>
                         <div class="field">
-                            <label class="field-label" for="model-select">Modelo</label>
+                            <label class="field-label" for="model-select" data-i18n="settings.model">Modelo</label>
                             <select id="model-select" class="select-input"></select>
                         </div>
+                    </div>
+                    <div class="field-row">
                         <div class="field">
-                            <span class="field-label">Tema actual</span>
-                            <button class="theme-toggle" id="toggle-theme" type="button" aria-label="Cambiar tema">
+                            <span class="field-label" data-i18n="settings.language">Idioma</span>
+                            <button class="theme-toggle" id="toggle-lang" type="button" aria-label="Cambiar idioma" data-i18n-aria="settings.langToggle">
+                                <span id="lang-label">Español</span>
+                                <span data-icon="chevrons-up-down" class="theme-toggle-chevron"></span>
+                            </button>
+                        </div>
+                        <div class="field">
+                            <span class="field-label" data-i18n="settings.theme">Tema actual</span>
+                            <button class="theme-toggle" id="toggle-theme" type="button" aria-label="Cambiar tema" data-i18n-aria="settings.themeToggle">
                                 <span data-icon="moon" id="theme-icon"></span>
                                 <span id="theme-label">Oscuro</span>
                                 <span data-icon="chevrons-up-down" class="theme-toggle-chevron"></span>
@@ -212,31 +223,32 @@
                             <span class="field-label">System prompts</span>
                             <div class="prompt-btn-list">
                                 <button class="prompt-open-btn" data-open-prompt="oneshot" type="button">
-                                    <span>System prompt · One-shot</span>
+                                    <span data-i18n="prompt.oneshot">System prompt · One-shot</span>
                                     <span class="prompt-open-arrow">›</span>
                                 </button>
                                 <button class="prompt-open-btn" data-open-prompt="chat" type="button">
-                                    <span>System prompt · Chat</span>
+                                    <span data-i18n="prompt.chat">System prompt · Chat</span>
                                     <span class="prompt-open-arrow">›</span>
                                 </button>
                                 <button class="prompt-open-btn" data-open-prompt="agent" type="button">
-                                    <span>System prompt · Agente</span>
+                                    <span data-i18n="prompt.agent">System prompt · Agente</span>
                                     <span class="prompt-open-arrow">›</span>
                                 </button>
                             </div>
+                            <p class="api-key-hint" id="prompt-lang-hint"></p>
                         </div>
                     </div>
 
                     <div class="schema-info">
-                        Schema one-shot: <code id="schema-path-oneshot">…</code><br>
-                        Schema chat: <code id="schema-path-chat">…</code><br>
-                        Schema agente: <code id="schema-path-agent">…</code>
+                        <span data-i18n="settings.schemaOneshot">Schema one-shot</span>: <code id="schema-path-oneshot">…</code><br>
+                        <span data-i18n="settings.schemaChat">Schema chat</span>: <code id="schema-path-chat">…</code><br>
+                        <span data-i18n="settings.schemaAgent">Schema agente</span>: <code id="schema-path-agent">…</code>
                     </div>
 
                     <div class="danger-zone">
-                        <span class="field-label danger-label">Zona de peligro</span>
-                        <p class="danger-help">Borra todas las trazas, conversaciones y rutinas guardadas. La acción no se puede deshacer.</p>
-                        <button class="btn btn-danger" id="reset-all-btn" type="button">Borrar todo</button>
+                        <span class="field-label danger-label" data-i18n="settings.dangerZone">Zona de peligro</span>
+                        <p class="danger-help" data-i18n="settings.dangerHelp">Borra todas las trazas, conversaciones y rutinas guardadas. La acción no se puede deshacer.</p>
+                        <button class="btn btn-danger" id="reset-all-btn" type="button" data-i18n="settings.resetAll">Borrar todo</button>
                     </div>
                 </div>
             </div>
@@ -247,23 +259,23 @@
             <div class="modal-overlay" data-close-profile></div>
             <div class="modal-panel modal-panel--profile">
                 <header class="modal-header">
-                    <h3>Tu perfil</h3>
-                    <button class="icon-btn" data-close-profile type="button" aria-label="Cerrar">
+                    <h3 data-i18n="profile.title">Tu perfil</h3>
+                    <button class="icon-btn" data-close-profile type="button" aria-label="Cerrar" data-i18n-aria="common.close">
                         <span data-icon="x"></span>
                     </button>
                 </header>
                 <div class="modal-body">
-                    <p class="profile-help">Tu agente consulta este perfil cuando arma rutinas en el modo Agente: marca el equipamiento que tienes y las zonas con lesiones o molestias.</p>
-                    <div class="field-label">Equipamiento disponible</div>
-                    <div class="check-grid" id="profile-equipamiento"></div>
-                    <div class="field-label">Lesiones o molestias</div>
-                    <div class="check-grid" id="profile-lesiones"></div>
-                    <label class="field-label" for="profile-notas">Notas para tu agente</label>
-                    <textarea id="profile-notas" class="textarea-input profile-notas" rows="3" placeholder="Ej. La rodilla solo molesta al saltar; prefiero entrenar de mañana."></textarea>
+                    <p class="profile-help" data-i18n="profile.help">Tu agente consulta este perfil cuando arma rutinas en el modo Agente: marca el equipamiento que tienes y las zonas con lesiones o molestias.</p>
+                    <div class="field-label" data-i18n="profile.equipment">Equipamiento disponible</div>
+                    <div class="check-grid" id="profile-equipment"></div>
+                    <div class="field-label" data-i18n="profile.injuries">Lesiones o molestias</div>
+                    <div class="check-grid" id="profile-injuries"></div>
+                    <label class="field-label" for="profile-notes" data-i18n="profile.notes">Notas para tu agente</label>
+                    <textarea id="profile-notes" class="textarea-input profile-notas" rows="3" placeholder="Ej. La rodilla solo molesta al saltar; prefiero entrenar de mañana." data-i18n-placeholder="profile.notesPlaceholder"></textarea>
                 </div>
                 <footer class="prompt-modal-footer">
-                    <button class="btn btn-outline" id="profile-cancel" type="button">Cancelar</button>
-                    <button class="btn btn-primary" id="profile-save" type="button">Guardar</button>
+                    <button class="btn btn-outline" id="profile-cancel" type="button" data-i18n="common.cancel">Cancelar</button>
+                    <button class="btn btn-primary" id="profile-save" type="button" data-i18n="common.save">Guardar</button>
                 </footer>
             </div>
         </div>
@@ -275,8 +287,8 @@
                 <header class="modal-header">
                     <h3 id="prompt-modal-title">System prompt</h3>
                     <div class="prompt-modal-actions">
-                        <button class="text-btn" id="prompt-modal-restore" type="button">Restaurar default (v0)</button>
-                        <button class="icon-btn" data-close-prompt-modal type="button" aria-label="Cerrar">
+                        <button class="text-btn" id="prompt-modal-restore" type="button" data-i18n="prompt.restore">Restaurar default (v0)</button>
+                        <button class="icon-btn" data-close-prompt-modal type="button" aria-label="Cerrar" data-i18n-aria="common.close">
                             <span data-icon="x"></span>
                         </button>
                     </div>
@@ -285,8 +297,8 @@
                     <textarea id="prompt-modal-textarea" class="textarea-input prompt-modal-textarea" spellcheck="false"></textarea>
                 </div>
                 <footer class="prompt-modal-footer">
-                    <button class="btn btn-outline" id="prompt-modal-cancel" type="button">Cancelar</button>
-                    <button class="btn btn-primary" id="prompt-modal-save" type="button">Guardar</button>
+                    <button class="btn btn-outline" id="prompt-modal-cancel" type="button" data-i18n="common.cancel">Cancelar</button>
+                    <button class="btn btn-primary" id="prompt-modal-save" type="button" data-i18n="common.save">Guardar</button>
                 </footer>
             </div>
         </div>
@@ -297,7 +309,7 @@
             <div class="modal-panel">
                 <header class="modal-header">
                     <h3 id="modal-title">…</h3>
-                    <button class="icon-btn" data-close-modal type="button" aria-label="Cerrar">
+                    <button class="icon-btn" data-close-modal type="button" aria-label="Cerrar" data-i18n-aria="common.close">
                         <span data-icon="x"></span>
                     </button>
                 </header>
@@ -310,18 +322,18 @@
             <div class="modal-overlay" data-close-oneshot></div>
             <div class="modal-panel modal-panel--oneshot">
                 <header class="modal-header">
-                    <h3>Nueva rutina</h3>
-                    <button class="icon-btn" data-close-oneshot type="button" aria-label="Cerrar">
+                    <h3 data-i18n="oneshot.title">Nueva rutina</h3>
+                    <button class="icon-btn" data-close-oneshot type="button" aria-label="Cerrar" data-i18n-aria="common.close">
                         <span data-icon="x"></span>
                     </button>
                 </header>
                 <div class="modal-body" id="oneshot-body">
                     <div id="oneshot-input-block">
-                        <p class="oneshot-help">Describe el caso del usuario en lenguaje natural. Una sola interacción, una sola rutina.</p>
-                        <textarea id="oneshot-input" class="textarea-input" rows="4" placeholder="Ej. Quiero perder peso, tengo 30 minutos por día, 4 veces por semana, sin equipamiento."></textarea>
+                        <p class="oneshot-help" data-i18n="oneshot.help">Describe el caso del usuario en lenguaje natural. Una sola interacción, una sola rutina.</p>
+                        <textarea id="oneshot-input" class="textarea-input" rows="4" placeholder="Ej. Quiero perder peso, tengo 30 minutos por día, 4 veces por semana, sin equipamiento." data-i18n-placeholder="oneshot.placeholder"></textarea>
                         <div class="oneshot-actions">
                             <button class="btn btn-primary" id="oneshot-generate-btn" type="button">
-                                <span>Generar rutina</span>
+                                <span data-i18n="oneshot.generate">Generar rutina</span>
                                 <span>→</span>
                             </button>
                         </div>
@@ -341,8 +353,8 @@
                 <div class="modal-body">
                     <p class="confirm-message" id="confirm-message"></p>
                     <div class="confirm-actions">
-                        <button class="btn btn-outline" id="confirm-cancel" type="button">Cancelar</button>
-                        <button class="btn btn-primary" id="confirm-ok" type="button">Confirmar</button>
+                        <button class="btn btn-outline" id="confirm-cancel" type="button" data-i18n="common.cancel">Cancelar</button>
+                        <button class="btn btn-primary" id="confirm-ok" type="button" data-i18n="common.confirm">Confirmar</button>
                     </div>
                 </div>
             </div>
@@ -353,27 +365,29 @@
             <div class="modal-overlay" data-close-about></div>
             <div class="modal-panel modal-panel--about">
                 <header class="modal-header">
-                    <h3>Acerca de Routina</h3>
-                    <button class="icon-btn" data-close-about type="button" aria-label="Cerrar">
+                    <h3 data-i18n="about.title">Acerca de Routina</h3>
+                    <button class="icon-btn" data-close-about type="button" aria-label="Cerrar" data-i18n-aria="common.close">
                         <span data-icon="x"></span>
                     </button>
                 </header>
                 <div class="modal-body">
                     <div class="about-content">
-                        <p>
-                            <strong>Routina</strong> es una app de coaching de fitness asistida por IA,
-                            desarrollada por <a href="https://alaimolabs.com" target="_blank" rel="noopener" class="about-link">Alaimo Labs</a>
-                            con fines prácticos: ofrecer a los alumnos del programa
-                            <a href="https://alaimolabs.com/eva" target="_blank" rel="noopener" class="about-link">AI Evals</a>
-                            un entorno simulado donde practicar el diseño y la evaluación de aplicaciones con LLMs.
-                        </p>
-                        <p>
-                            Las tres rutas de la app — <em>Rutinas</em>, <em>Chat</em> y <em>Agente</em> — son el lienzo del curso:
-                            cada una representa un escope distinto de evaluación (calidad de salida, coherencia conversacional, agente con tools)
-                            que se recorre a lo largo del programa.
-                        </p>
+                        <div id="about-body" data-i18n-html="about.body">
+                            <p>
+                                <strong>Routina</strong> es una app de coaching de fitness asistida por IA,
+                                desarrollada por <a href="https://alaimolabs.com" target="_blank" rel="noopener" class="about-link">Alaimo Labs</a>
+                                con fines prácticos: ofrecer a los alumnos del programa
+                                <a href="https://alaimolabs.com/eva" target="_blank" rel="noopener" class="about-link">AI Evals</a>
+                                un entorno simulado donde practicar el diseño y la evaluación de aplicaciones con LLMs.
+                            </p>
+                            <p>
+                                Las tres rutas de la app — <em>Rutinas</em>, <em>Chat</em> y <em>Agente</em> — son el lienzo del curso:
+                                cada una representa un escope distinto de evaluación (calidad de salida, coherencia conversacional, agente con tools)
+                                que se recorre a lo largo del programa.
+                            </p>
+                        </div>
                         <div class="about-meta">
-                            <div class="about-meta-line">Versión 0.4.1 · es-AR</div>
+                            <div class="about-meta-line" id="about-version">Versión 0.5.0 · es / en</div>
                             <div class="about-meta-line">MIT License — Copyright (c) 2026 MTN LABS LLC d/b/a Alaimo Labs</div>
                         </div>
                     </div>
