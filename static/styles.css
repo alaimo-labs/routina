@@ -535,6 +535,7 @@ code {
 
 .filters .text-input { max-width: 360px; }
 .filters .select-input { max-width: 220px; }
+.filters .compare-btn { margin-left: auto; }
 
 ::placeholder { color: var(--ink-muted); opacity: 1; }
 
@@ -1070,7 +1071,7 @@ code {
     cursor: pointer;
     transition: padding .15s ease, color .15s ease;
     display: grid;
-    grid-template-columns: 60px 1fr auto auto auto auto;
+    grid-template-columns: 24px 60px 1fr auto auto auto auto;
     gap: 16px;
     align-items: center;
     color: var(--ink);
@@ -1135,6 +1136,19 @@ code {
 }
 .routine-summary-card:hover .routine-delete-btn { opacity: 1; }
 .routine-delete-btn:hover { color: var(--danger); }
+.routine-select {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.routine-select input {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: var(--accent);
+    margin: 0;
+}
 
 /* ==================================================================================
    Runs list (historial)
@@ -1686,6 +1700,45 @@ code {
 .prompt-open-arrow { color: var(--ink-soft); font-size: 1.05rem; }
 .modal-panel--confirm { max-width: 420px; }
 .modal-panel--about { max-width: 560px; }
+.modal-panel--compare { max-width: min(1100px, calc(100vw - 48px)); }
+/* Comparación por bandas: cada sección (header, meta, aviso, ejercicios, notas)
+   ocupa una fila del grid, con una celda por rutina. Las bandas se alinean entre
+   columnas; la altura de cada una la fija la rutina más alta y las más cortas
+   dejan aire debajo. Las celdas se estiran a la altura de la banda (align-items
+   stretch por defecto) para que el separador vertical entre columnas sea continuo. */
+.compare-grid {
+    display: grid;
+    overflow-x: auto;
+}
+.compare-cell {
+    min-width: 0;
+    padding: 0 24px;
+    border-left: 1px solid var(--line-soft);
+}
+.compare-col-first { padding-left: 0; border-left: none; }
+.compare-col-last { padding-right: 0; }
+/* Neutraliza los márgenes verticales de cada sección (que en el detalle sirven
+   para separar bloques en flujo normal) y controla el ritmo con padding por banda,
+   ya que en el grid los márgenes no colapsan entre celdas. */
+.compare-cell > :first-child { margin-top: 0; }
+.compare-cell > :last-child { margin-bottom: 0; }
+.compare-cell--header { padding-bottom: 14px; }
+.compare-cell--meta { padding-bottom: 18px; }
+.compare-cell--warning:not(:empty) { padding-bottom: 18px; }
+/* Ejercicios alineados por índice: header y cada fila son bandas propias. Una
+   plantilla fija (columna de descanso fija) hace que, dentro de una columna, las
+   etiquetas del header y los valores de cada fila compartan el mismo eje derecho. */
+.compare-cell--exhead .exercises-list,
+.compare-cell--exrow .exercises-list {
+    grid-template-columns: 22px minmax(0, 1fr) auto 56px;
+    column-gap: 12px;
+}
+/* En columnas angostas, deja que la prescripción envuelva (queda alineada a la
+   derecha igual, porque el eje derecho lo fija la columna de descanso, no su ancho)
+   y que el nombre pueda partir palabras largas, para que nunca se pisen. */
+.compare-cell--exrow .ex-prescription { white-space: normal; }
+.compare-cell--exrow .ex-name { overflow-wrap: anywhere; }
+.compare-cell--exrow:empty { min-height: 0; }
 
 .about-content {
     padding: 22px 24px 24px;
@@ -1772,7 +1825,7 @@ code {
     .view-header, .filters, .grid, .list { padding-left: 18px; padding-right: 18px; }
     .composer { padding: 14px 18px; }
     .chat-scroll { padding-left: 18px; padding-right: 18px; }
-    .routine-summary-card { grid-template-columns: 40px 1fr auto auto; }
+    .routine-summary-card { grid-template-columns: 24px 40px 1fr auto auto; }
     .routine-summary-card .summary-stat,
     .routine-summary-card .summary-arrow { display: none; }
     .routine-summary-card .routine-delete-btn { opacity: 1; }

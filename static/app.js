@@ -81,6 +81,9 @@ const I18N = {
         'home.newRoutine': 'Nueva rutina',
         'home.filterGoal': 'Filtrar por objetivo…',
         'home.allFormats': 'Todos los formatos',
+        'compare.button': 'Comparar',
+        'compare.title': 'Comparar rutinas',
+        'compare.selectAria': 'Seleccionar para comparar',
         'home.emptyLabel': '· Vacío',
         'home.emptyTitle': 'Todavía no hay rutinas guardadas.',
         'home.emptyBody': 'Haz click en <strong>+ Nueva rutina</strong> para generar la primera. Cada rutina queda guardada acá con su run asociado en el historial.',
@@ -282,6 +285,9 @@ const I18N = {
         'home.newRoutine': 'New routine',
         'home.filterGoal': 'Filter by goal…',
         'home.allFormats': 'All formats',
+        'compare.button': 'Compare',
+        'compare.title': 'Compare routines',
+        'compare.selectAria': 'Select to compare',
         'home.emptyLabel': '· Empty',
         'home.emptyTitle': 'No saved routines yet.',
         'home.emptyBody': 'Click <strong>+ New routine</strong> to generate the first one. Every routine is saved here with its run linked in the history.',
@@ -506,6 +512,7 @@ const state = {
         },
     },
     routinesFilter: { goal: '', format: '' },
+    selectedRoutines: new Set(),   // ids de rutinas tildadas para comparar
     runsFilter: { status: '' },
     drawerOpen: false,
     promptModalMode: null,   // 'oneshot' | 'chat' | 'agent' mientras el editor de prompt está abierto
@@ -901,7 +908,10 @@ function normalizeRoutine(p) {
 }
 
 // -------------------- Render: rutina --------------------
-function renderRoutineHTML(rawPayload) {
+// Descompone una rutina en sus secciones (header, meta, aviso, ejercicios, notas)
+// como piezas de HTML independientes. renderRoutineHTML las concatena en orden;
+// la vista de comparación las alinea por bandas (una sección = una fila del grid).
+function routineSections(rawPayload) {
     const payload = normalizeRoutine(rawPayload);
     const goal = escapeHtml(payload.goal || t('routine.noGoal'));
     const days = payload.days_per_week ?? '—';
@@ -920,7 +930,7 @@ function renderRoutineHTML(rawPayload) {
         </div>
     `;
 
-    const exercises = (payload.exercises || []).map((ex, i) => {
+    const exerciseRows = (payload.exercises || []).map((ex, i) => {
         const name = escapeHtml(ex.name || t('routine.fallbackName'));
         const sets = ex.sets ?? '?';
         const reps = escapeHtml(String(ex.reps ?? '?'));
@@ -937,9 +947,10 @@ function renderRoutineHTML(rawPayload) {
                 ${exNotes ? `<span class="ex-notes-cell">${escapeHtml(exNotes)}</span>` : '<span></span>'}
             </div>
         `;
-    }).join('');
+    });
+    const exercises = exerciseRows.join('');
 
-    const notesHtml = notes
+    const notesLines = notes
         ? notes.split(/\n+/).map(l => l.trim()).filter(Boolean).map((line, i) => `
             <div class="nota-line">
                 <span class="nota-num">${String(i + 1).padStart(2, '0')}</span>
@@ -948,35 +959,44 @@ function renderRoutineHTML(rawPayload) {
         `).join('')
         : '';
 
-    return `
-        <div class="routine-eyebrow">${escapeHtml(t('routine.goal'))}</div>
-        <div class="routine-objetivo">${goal}</div>
-        <div class="routine-meta-row">
-            <div class="routine-meta-item">
-                <div class="label">${escapeHtml(t('routine.frequency'))}</div>
-                <div class="value">${days}<span class="unit">${escapeHtml(t('routine.daysUnit'))}</span></div>
-            </div>
-            <div class="routine-meta-item">
-                <div class="label">${escapeHtml(t('routine.perSession'))}</div>
-                <div class="value">${duration}<span class="unit">min</span></div>
-            </div>
-            <div class="routine-meta-item">
-                <div class="label">${escapeHtml(t('routine.format'))}</div>
-                <div class="value">${format}</div>
-            </div>
-        </div>
-        ${warning ? `
+    return {
+        header: `
+            <div class="routine-eyebrow">${escapeHtml(t('routine.goal'))}</div>
+            <div class="routine-objetivo">${goal}</div>`,
+        meta: `
+            <div class="routine-meta-row">
+                <div class="routine-meta-item">
+                    <div class="label">${escapeHtml(t('routine.frequency'))}</div>
+                    <div class="value">${days}<span class="unit">${escapeHtml(t('routine.daysUnit'))}</span></div>
+                </div>
+                <div class="routine-meta-item">
+                    <div class="label">${escapeHtml(t('routine.perSession'))}</div>
+                    <div class="value">${duration}<span class="unit">min</span></div>
+                </div>
+                <div class="routine-meta-item">
+                    <div class="label">${escapeHtml(t('routine.format'))}</div>
+                    <div class="value">${format}</div>
+                </div>
+            </div>`,
+        warning: warning ? `
             <div class="advertencia">
                 <div class="advertencia-label">${escapeHtml(t('routine.warning'))}</div>
                 <div class="txt">${escapeHtml(warning)}</div>
-            </div>
-        ` : ''}
-        <div class="exercises-list">${exercisesHeader}${exercises}</div>
-        ${notes ? `
+            </div>` : '',
+        exercises: `<div class="exercises-list">${exercisesHeader}${exercises}</div>`,
+        // Piezas sueltas para la vista de comparación, que alinea el header y cada
+        // ejercicio como bandas independientes (una fila del grid por índice).
+        exerciseHeader: exercisesHeader,
+        exerciseRows,
+        notes: notes ? `
             <div class="section-heading">${escapeHtml(t('routine.generalNotes'))}</div>
-            <div class="notas-generales">${notesHtml}</div>
-        ` : ''}
-    `;
+            <div class="notas-generales">${notesLines}</div>` : '',
+    };
+}
+
+function renderRoutineHTML(rawPayload) {
+    const s = routineSections(rawPayload);
+    return `${s.header}${s.meta}${s.warning}${s.exercises}${s.notes}`;
 }
 
 // -------------------- Render: lista de chats (sidebar, compartida chat/agent) --------------------
@@ -1267,6 +1287,9 @@ async function renderHome() {
         const num = String(i + 1).padStart(2, '0');
         return `
             <div class="routine-summary-card" data-open-routine="${r.id}">
+                <label class="routine-select" title="${escapeHtml(t('compare.selectAria'))}">
+                    <input type="checkbox" data-select-routine="${r.id}" aria-label="${escapeHtml(t('compare.selectAria'))}" ${state.selectedRoutines.has(r.id) ? 'checked' : ''}>
+                </label>
                 <span class="index-num">${num}</span>
                 <div>
                     <div class="title">${escapeHtml(r.goal || t('routine.noGoal'))}</div>
@@ -1281,6 +1304,51 @@ async function renderHome() {
             </div>
         `;
     }).join('');
+
+    updateCompareBtn();
+}
+
+function updateCompareBtn() {
+    const btn = document.getElementById('btn-compare');
+    if (btn) btn.disabled = state.selectedRoutines.size < 2;
+}
+
+async function openCompareModal() {
+    const ids = [...state.selectedRoutines];
+    if (ids.length < 2) return;
+    const routines = await Promise.all(ids.map(id => api.getRoutine(id)));
+    const sections = routines.map(d => routineSections(d.payload));
+    const n = sections.length;
+    // Layout por bandas: cada banda es una fila del grid, con una celda por rutina.
+    // Al emitir las celdas banda-por-banda sobre un grid de N columnas, cada banda
+    // queda en una misma fila y se alinea entre columnas. Los ejercicios se expanden
+    // a una banda por índice (el header y luego el ejercicio 01 de cada rutina, el
+    // 02, …), de modo que cada ejercicio quede a la misma altura en todas las columnas.
+    // Clase de posición por columna: las celdas se emiten banda-por-banda, así que
+    // no se puede confiar en :first-child/:last-child para los bordes y paddings.
+    const band = (cls, cellFn) =>
+        sections.map((s, i) => {
+            const pos = i === 0 ? ' compare-col-first' : (i === n - 1 ? ' compare-col-last' : '');
+            return `<div class="compare-cell ${cls}${pos}">${cellFn(s)}</div>`;
+        }).join('');
+
+    const maxEx = Math.max(0, ...sections.map(s => s.exerciseRows.length));
+    const exerciseBands = [
+        band('compare-cell--exhead', s => `<div class="exercises-list">${s.exerciseHeader}</div>`),
+        ...Array.from({ length: maxEx }, (_, i) =>
+            band('compare-cell--exrow', s => s.exerciseRows[i] ? `<div class="exercises-list">${s.exerciseRows[i]}</div>` : '')),
+    ].join('');
+
+    const cells = [
+        band('compare-cell--header', s => s.header),
+        band('compare-cell--meta', s => s.meta),
+        band('compare-cell--warning', s => s.warning),
+        exerciseBands,
+        band('compare-cell--notes', s => s.notes),
+    ].join('');
+
+    const html = `<div class="compare-grid" style="grid-template-columns: repeat(${n}, minmax(260px, 1fr))">${cells}</div>`;
+    openModal(t('compare.title'), html, 'modal-panel--compare');
 }
 
 async function deleteRoutine(routineId) {
@@ -1292,6 +1360,7 @@ async function deleteRoutine(routineId) {
     if (!ok) return;
     try {
         await api.deleteRoutine(routineId);
+        state.selectedRoutines.delete(routineId);
         showToast(t('toast.routineDeleted'));
         renderHome();
     } catch (e) {
@@ -2146,6 +2215,10 @@ function bindEvents() {
     // Home (/)
     document.getElementById('btn-new-routine').addEventListener('click', openOneshotModal);
     document.getElementById('routines-grid').addEventListener('click', (ev) => {
+        if (ev.target.closest('.routine-select')) {
+            ev.stopPropagation();   // el checkbox no abre el detalle
+            return;
+        }
         const delBtn = ev.target.closest('[data-delete-routine]');
         if (delBtn) {
             ev.stopPropagation();
@@ -2155,6 +2228,15 @@ function bindEvents() {
         const card = ev.target.closest('[data-open-routine]');
         if (card) openRoutineModal(parseInt(card.dataset.openRoutine, 10));
     });
+    document.getElementById('routines-grid').addEventListener('change', (ev) => {
+        const cb = ev.target.closest('[data-select-routine]');
+        if (!cb) return;
+        const id = parseInt(cb.dataset.selectRoutine, 10);
+        if (cb.checked) state.selectedRoutines.add(id);
+        else state.selectedRoutines.delete(id);
+        updateCompareBtn();
+    });
+    document.getElementById('btn-compare').addEventListener('click', openCompareModal);
     document.getElementById('filter-goal').addEventListener('input', (ev) => {
         state.routinesFilter.goal = ev.target.value;
         renderHome();
