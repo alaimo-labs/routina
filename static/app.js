@@ -61,6 +61,7 @@ function replaceIcons(root = document) {
 // data-i18n-aria / data-i18n-html; los dinámicos usan t(key).
 const I18N = {
     es: {
+        'app.title': 'Routina · Coach de fitness asistido por IA',
         'brand.tag': 'Tu coach personal',
         'sidebar.collapse': 'Colapsar barra lateral',
         'sidebar.show': 'Mostrar barra lateral',
@@ -265,6 +266,7 @@ const I18N = {
         'tool.save_routine': 'Guardando la rutina…',
     },
     en: {
+        'app.title': 'Routina · AI-assisted fitness coach',
         'brand.tag': 'Your personal coach',
         'sidebar.collapse': 'Collapse sidebar',
         'sidebar.show': 'Show sidebar',
@@ -479,9 +481,7 @@ function t(key, ...args) {
 // Aplica las traducciones a los nodos estáticos del HTML.
 function applyI18n() {
     document.documentElement.lang = state.settings.lang;
-    document.title = state.settings.lang === 'es'
-        ? 'Routina · Coach de fitness asistido por IA'
-        : 'Routina · AI-assisted fitness coach';
+    document.title = t('app.title');
     document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });

@@ -63,6 +63,11 @@ async def index() -> FileResponse:
     return FileResponse(str(STATIC_DIR / "index.html"))
 
 
+@app.get("/favicon.ico")
+async def favicon() -> FileResponse:
+    return FileResponse(str(STATIC_DIR / "favicon.ico"))
+
+
 # ======================================================================================
 # Config
 # ======================================================================================
