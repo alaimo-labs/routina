@@ -1540,6 +1540,113 @@ code {
 }
 .tool-chip svg { color: var(--accent); flex-shrink: 0; }
 .tool-chip-detail { color: var(--ink-muted); }
+/* Los chips son botones: abren el modal "Tools del agente" en esa tool. */
+button.tool-chip {
+    cursor: pointer;
+    transition: border-color .15s ease;
+}
+button.tool-chip:hover { border-color: var(--accent); }
+
+/* ==================================================================================
+   Modal "Tools del agente" (definiciones que recibe el modelo)
+   ================================================================================== */
+.agent-tools-intro {
+    color: var(--ink-soft);
+    font-size: .92rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+.agent-tool {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+.agent-tool.is-focused { border-color: var(--accent); }
+.agent-tool-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.agent-tool-name {
+    font-family: var(--font-mono);
+    font-size: .9rem;
+    color: var(--accent);
+}
+.agent-tool-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+}
+.agent-tool-desc {
+    font-size: .9rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+.tool-params {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.tool-param {
+    border-top: 1px solid var(--line-soft);
+    padding-top: 10px;
+}
+.tool-param-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.tool-param-head > code {
+    font-family: var(--font-mono);
+    font-size: .82rem;
+}
+.tool-param-type {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-muted);
+}
+.tool-param-req {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+.tool-param-req.is-required { color: var(--accent); }
+.tool-param-desc {
+    font-size: .85rem;
+    color: var(--ink-soft);
+    margin-top: 4px;
+    line-height: 1.45;
+}
+.tool-param-enum {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+.tool-param-enum code {
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    padding: 2px 7px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+}
+.agent-tools-json summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: .85rem;
+}
 
 .preguntas-card .preguntas-label {
     font-family: var(--font-mono);

@@ -159,6 +159,8 @@ Adicionalmente hay **`/historial`**: la traza completa de evals — toda corrida
 
 **Configuración** (botón al pie de la barra lateral): eliges el modelo (agrupado por proveedor: OpenAI, Anthropic, Google), el **idioma** (español o inglés: cambia los textos de la UI y el idioma de generación) y editas los system prompts — hay uno por modo (one-shot, chat, agente) y por idioma; cada uno se abre en un editor a pantalla casi completa con su botón para restaurar el default. La app rutea cada modelo al proveedor correcto según su API key.
 
+**Tools del agente**: en el modo Agente el modelo trabaja dentro de un loop (máximo 8 iteraciones por turno) con cinco herramientas: `read_profile` (lee tu perfil), `search_exercises` (busca en el catálogo curado, con filtros por grupo muscular, nivel, equipamiento y lesiones), `ask_user` (te hace hasta 3 preguntas con opciones y pausa la conversación hasta que respondes), `validate_routine` (valida la rutina contra el schema oficial) y `save_routine` (la valida y la guarda en tu biblioteca). Puedes inspeccionar las definiciones exactas que recibe el modelo — descripciones, parámetros y valores posibles, en el idioma activo — desde **Configuración → Tools del agente**, haciendo click en cualquier chip de tool de una conversación del agente, o vía `GET /api/agent/tools?lang=es|en`.
+
 **Idiomas**: la app es bilingüe (español / inglés). El selector de Configuración cambia la UI y el idioma en el que genera el modelo. Las claves del JSON de las rutinas son siempre en inglés (`goal`, `exercises`, …) en ambos idiomas; lo que cambia es el contenido de los textos. Cada run registra el idioma con el que se generó.
 
 **Validación de salida**: la app valida cada respuesta del LLM en tres capas (parseo JSON, conformidad con el schema, contenido) y te muestra cada resultado por separado — útil para razonar sobre dónde falla.
@@ -253,6 +255,7 @@ El frontend es una SPA estática que habla con FastAPI vía estos endpoints (út
 | `GET`    | `/api/config`           | Modelos disponibles (con proveedor), default, idiomas, qué proveedores tienen key |
 | `GET`    | `/api/system-prompt`    | Los system prompts por defecto, por modo y por idioma (`{mode: {es, en}}`) |
 | `GET`    | `/api/schema?mode=...`  | El JSON Schema del modo (`oneshot`, `chat` o `agent`; default `oneshot`) |
+| `GET`    | `/api/agent/tools`      | Definiciones de las tools del agente tal como las recibe el modelo (`?lang=es\|en`) |
 
 ---
 

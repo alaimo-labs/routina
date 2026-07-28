@@ -264,6 +264,17 @@ const I18N = {
         'tool.ask_user': 'Preparando preguntas…',
         'tool.validate_routine': 'Validando la rutina…',
         'tool.save_routine': 'Guardando la rutina…',
+        'agentTools.sectionLabel': 'Tools del agente',
+        'agentTools.open': 'Ver tools disponibles',
+        'agentTools.title': 'Tools del agente',
+        'agentTools.intro': (n) => `Estas son las definiciones exactas que recibe el modelo en el modo Agente. Las tools se ejecutan en el servidor dentro del loop (máximo ${n} iteraciones); <code>ask_user</code> es especial: pausa la conversación hasta que respondes.`,
+        'agentTools.terminal': 'pausa la conversación',
+        'agentTools.required': 'requerido',
+        'agentTools.optional': 'opcional',
+        'agentTools.noParams': 'Sin parámetros.',
+        'agentTools.viewJson': 'Ver JSON completo (lo que recibe el modelo)',
+        'agentTools.chipTitle': 'Ver definición de la tool',
+        'agentTools.loadError': 'No pude cargar las tools: ',
     },
     en: {
         'app.title': 'Routina · AI-assisted fitness coach',
@@ -469,6 +480,17 @@ const I18N = {
         'tool.ask_user': 'Preparing questions…',
         'tool.validate_routine': 'Validating the routine…',
         'tool.save_routine': 'Saving the routine…',
+        'agentTools.sectionLabel': 'Agent tools',
+        'agentTools.open': 'View available tools',
+        'agentTools.title': 'Agent tools',
+        'agentTools.intro': (n) => `These are the exact definitions the model receives in Agent mode. Tools run server-side inside the loop (up to ${n} iterations); <code>ask_user</code> is special: it pauses the conversation until you answer.`,
+        'agentTools.terminal': 'pauses the conversation',
+        'agentTools.required': 'required',
+        'agentTools.optional': 'optional',
+        'agentTools.noParams': 'No parameters.',
+        'agentTools.viewJson': 'View full JSON (what the model receives)',
+        'agentTools.chipTitle': 'View tool definition',
+        'agentTools.loadError': 'Couldn’t load the tools: ',
     },
 };
 
@@ -593,6 +615,12 @@ const api = {
     async getSystemPrompts() {
         // Devuelve { oneshot: "...", chat: "..." } — un prompt default por modo.
         const r = await fetch('/api/system-prompt');
+        return r.json();
+    },
+    async getAgentTools(lang) {
+        // { tools: [...defs provider-neutral...], user_tool, max_iterations }
+        const r = await fetch(`/api/agent/tools?lang=${encodeURIComponent(lang)}`);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
     },
     async oneshotGenerate(body) {
@@ -1126,8 +1154,19 @@ function renderConvMessages(mode) {
     });
 }
 
+// Mapea los nombres de tools del contrato anterior en español a los actuales,
+// para que los chips de runs viejos abran la definición correcta en el modal.
+const TOOL_NAME_COMPAT = {
+    leer_perfil: 'read_profile',
+    buscar_ejercicios: 'search_exercises',
+    preguntar_usuario: 'ask_user',
+    validar_rutina: 'validate_routine',
+    guardar_rutina: 'save_routine',
+};
+
 // Resumen legible de cada tool call para el log inline del agente.
 // Acepta también los nombres del contrato anterior en español (runs viejos).
+// Cada chip es clickeable y abre el modal "Tools del agente" en esa tool.
 function toolChipHtml(tc) {
     const r = tc.result || {};
     const a = tc.args || {};
@@ -1146,7 +1185,8 @@ function toolChipHtml(tc) {
     } else if (r.error) {
         detail = t('chip.error');
     }
-    return `<span class="tool-chip">${icon('wrench', 11)}<span>${escapeHtml(tc.name)}</span>${detail ? `<span class="tool-chip-detail">${escapeHtml(detail)}</span>` : ''}</span>`;
+    const canonical = TOOL_NAME_COMPAT[tc.name] || tc.name;
+    return `<button type="button" class="tool-chip" data-tool-info="${escapeHtml(canonical)}" title="${escapeHtml(t('agentTools.chipTitle'))}">${icon('wrench', 11)}<span>${escapeHtml(tc.name)}</span>${detail ? `<span class="tool-chip-detail">${escapeHtml(detail)}</span>` : ''}</button>`;
 }
 
 // Card de preguntas con opciones (tool ask_user). Si no es interactiva
@@ -1469,6 +1509,80 @@ async function openRoutineModal(id) {
     const data = await api.getRoutine(id);
     const goal = data.payload.goal || data.payload.objetivo;
     openModal(goal || `${t('nav.routines')} #${data.id}`, renderRoutineHTML(data.payload));
+}
+
+// -------------------- Modal "Tools del agente" --------------------
+// Renderiza las definiciones que recibe el modelo (GET /api/agent/tools, idioma
+// activo). Se abre desde el drawer de Configuración o clickeando un tool-chip.
+
+function paramTypeLabel(spec) {
+    if (spec.type === 'array') return `array<${spec.items?.type || '?'}>`;
+    return spec.type || '';
+}
+
+// Filas de parámetros a partir del JSON Schema de la tool. Los objetos anidados y
+// los items de arrays se aplanan con prefijos tipo `routine.exercises[].name`.
+function paramRowsHtml(properties, required, prefix = '') {
+    const req = new Set(required || []);
+    return Object.entries(properties || {}).map(([name, spec]) => {
+        const enumVals = spec.enum || spec.items?.enum;
+        let rows = `
+            <div class="tool-param">
+                <div class="tool-param-head">
+                    <code>${escapeHtml(prefix + name)}</code>
+                    <span class="tool-param-type">${escapeHtml(paramTypeLabel(spec))}</span>
+                    <span class="tool-param-req ${req.has(name) ? 'is-required' : ''}">${escapeHtml(req.has(name) ? t('agentTools.required') : t('agentTools.optional'))}</span>
+                </div>
+                ${spec.description ? `<div class="tool-param-desc">${escapeHtml(spec.description)}</div>` : ''}
+                ${enumVals ? `<div class="tool-param-enum">${enumVals.map(v => `<code>${escapeHtml(v)}</code>`).join('')}</div>` : ''}
+            </div>
+        `;
+        const nested = spec.type === 'array' && spec.items?.type === 'object'
+            ? spec.items
+            : (spec.type === 'object' ? spec : null);
+        if (nested?.properties) {
+            rows += paramRowsHtml(nested.properties, nested.required, prefix + name + (spec.type === 'array' ? '[].' : '.'));
+        }
+        return rows;
+    }).join('');
+}
+
+async function openAgentToolsModal(focusTool = null) {
+    let data;
+    try {
+        data = await api.getAgentTools(state.settings.lang);
+    } catch (e) {
+        showToast(t('agentTools.loadError') + e.message);
+        return;
+    }
+    const sections = data.tools.map(tool => `
+        <section class="agent-tool" id="agent-tool-${escapeHtml(tool.name)}">
+            <div class="agent-tool-head">
+                <code class="agent-tool-name">${escapeHtml(tool.name)}</code>
+                ${tool.name === data.user_tool ? `<span class="agent-tool-badge">${escapeHtml(t('agentTools.terminal'))}</span>` : ''}
+            </div>
+            <p class="agent-tool-desc">${escapeHtml(tool.description)}</p>
+            ${Object.keys(tool.parameters?.properties || {}).length
+                ? `<div class="tool-params">${paramRowsHtml(tool.parameters.properties, tool.parameters.required)}</div>`
+                : `<div class="tool-param-desc">${escapeHtml(t('agentTools.noParams'))}</div>`}
+        </section>
+    `).join('');
+    const body = `
+        <p class="agent-tools-intro">${t('agentTools.intro', data.max_iterations)}</p>
+        ${sections}
+        <details class="agent-tools-json">
+            <summary>${escapeHtml(t('agentTools.viewJson'))}</summary>
+            <div class="code-block" style="margin-top:10px;">${escapeHtml(JSON.stringify(data.tools, null, 2))}</div>
+        </details>
+    `;
+    openModal(t('agentTools.title'), body);
+    if (focusTool) {
+        const el = document.getElementById(`agent-tool-${focusTool}`);
+        if (el) {
+            el.classList.add('is-focused');
+            requestAnimationFrame(() => el.scrollIntoView({ block: 'start' }));
+        }
+    }
 }
 
 async function openRunModal(id) {
@@ -2115,6 +2229,8 @@ function bindEvents() {
             toggleLang();
         } else if (ev.target.closest('#reset-all-btn')) {
             resetAll();
+        } else if (ev.target.closest('#open-agent-tools')) {
+            openAgentToolsModal();
         } else {
             const promptBtn = ev.target.closest('[data-open-prompt]');
             if (promptBtn) openPromptModal(promptBtn.dataset.openPrompt);
@@ -2165,6 +2281,11 @@ function bindEvents() {
 
     // Click handlers compartidos de los mensajes (/chat y /agent)
     const handleConvClick = (ev) => {
+        const chipBtn = ev.target.closest('[data-tool-info]');
+        if (chipBtn) {
+            openAgentToolsModal(chipBtn.dataset.toolInfo);
+            return;
+        }
         const saveBtn = ev.target.closest('[data-save-run]');
         if (saveBtn && !saveBtn.disabled) {
             saveRunFromChat(parseInt(saveBtn.dataset.saveRun, 10));

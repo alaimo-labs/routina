@@ -343,7 +343,7 @@ def _generate_google(
 # se reanuda el loop entregando la respuesta como tool_result NATIVO del
 # ask_user — no como un mensaje user sintético.
 
-_MAX_AGENT_ITERATIONS = 8
+MAX_AGENT_ITERATIONS = 8
 _USER_TOOL = "ask_user"
 
 
@@ -505,9 +505,9 @@ def _preguntas_terminal(state: _AgentState, args: dict[str, Any]) -> str:
 
 def _max_iter_error(state: _AgentState) -> str:
     state.api_error = (
-        f"El agente superó el máximo de {_MAX_AGENT_ITERATIONS} iteraciones sin respuesta final."
+        f"El agente superó el máximo de {MAX_AGENT_ITERATIONS} iteraciones sin respuesta final."
         if state.lang == "es"
-        else f"The agent exceeded the maximum of {_MAX_AGENT_ITERATIONS} iterations without a final answer."
+        else f"The agent exceeded the maximum of {MAX_AGENT_ITERATIONS} iterations without a final answer."
     )
     return ""
 
@@ -552,7 +552,7 @@ def _agent_openai(
     else:
         input_items = list(prior) + [{"role": "user", "content": user_input}]
 
-    while state.iterations < _MAX_AGENT_ITERATIONS:
+    while state.iterations < MAX_AGENT_ITERATIONS:
         state.iterations += 1
         try:
             response = client.responses.create(
@@ -639,7 +639,7 @@ def _agent_anthropic(
     else:
         api_messages = list(prior) + [{"role": "user", "content": user_input}]
 
-    while state.iterations < _MAX_AGENT_ITERATIONS:
+    while state.iterations < MAX_AGENT_ITERATIONS:
         state.iterations += 1
         request_kwargs: dict[str, Any] = {
             "model": model,
@@ -745,7 +745,7 @@ def _agent_google(
         contents = [_to_gemini_content(m) for m in prior]
         contents.append(_to_gemini_content({"role": "user", "content": user_input}))
 
-    while state.iterations < _MAX_AGENT_ITERATIONS:
+    while state.iterations < MAX_AGENT_ITERATIONS:
         state.iterations += 1
         try:
             response = client.models.generate_content(

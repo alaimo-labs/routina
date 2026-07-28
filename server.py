@@ -100,6 +100,23 @@ def get_schema(mode: str = "oneshot") -> dict[str, Any]:
     return validate.load_schema(config.schema_path(mode))
 
 
+@app.get("/api/agent/tools")
+def get_agent_tools(lang: str = config.DEFAULT_LANG) -> dict[str, Any]:
+    """Definiciones de las tools del agente, tal como las recibe el modelo.
+
+    Es la misma lista que `llm.run_agent` le pasa al proveedor (agent_tools.tool_defs),
+    con las descripciones en el idioma pedido. La UI la muestra en el modal
+    "Tools del agente" para que se pueda inspeccionar con qué cuenta el agente.
+    """
+    if lang not in config.LANGS:
+        raise HTTPException(status_code=400, detail=f"Idioma desconocido: {lang}")
+    return {
+        "tools": agent_tools.tool_defs(lang),
+        "user_tool": agent_tools.USER_TOOL,
+        "max_iterations": llm.MAX_AGENT_ITERATIONS,
+    }
+
+
 # ======================================================================================
 # Generate
 # ======================================================================================
